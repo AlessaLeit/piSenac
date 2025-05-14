@@ -7,15 +7,15 @@ class Cliente(Pessoa):
     def criar_por_input(cls):
         nome = input("Nome: ")
         cpf = input("CPF (11 dígitos): ")
-        if not cpf.isdigit() or len(cpf) != 11:
+        while not cpf.isdigit() or len(cpf) != 11:
             print("CPF inválido! Deve conter exatamente 11 dígitos numéricos.")
-            return
-        
+            cpf = input("CPF (11 dígitos): ")
+            
         telefone = input("Telefone: ")
         email = input("Email: ")
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        while not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             print("Email inválido!")
-            return
+            email = input("Email: ")
         
         endereco = input("Endereço: ")
         return cls(nome, cpf, telefone, email, endereco)
