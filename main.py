@@ -3,11 +3,13 @@ from queue import Full
 import re
 
 from cliente import Cliente
+from fornecedor import Fornecedor
 from produto import Produto
 
 loop = 1 
 clientes_cadastrados = []
 produtos_cadastrados = []
+fornecedor_cadastrados = []
 while loop == 1:
     print("\n-" * 10 + "  SOFTWARE  " + "-" * 10)
     print("Escolha uma opção:")
@@ -21,14 +23,14 @@ while loop == 1:
     print("[8] Financeiro")
     menu = input("Digite o número correspondente: ")
     
-    #Cliente
+    # Cliente
     if menu == "1":
         print("-" * 11 + "  CLIENTE  " + "-" * 11)
         print("Escolha uma opção:")
         print("[1] Adicionar Cliente")
         print("[2] Listar Cliente")
         print("[3] Remover Cliente")
-        print("[4] Atualziar Cliente")
+        print("[4] Atualizar Cliente")
         print("[5] Voltar")
         submenu = input("Digite o número correspondente: ")
         
@@ -81,18 +83,18 @@ while loop == 1:
                 else:
                     print("Índice inválido.")
     
-        # Sair
+        # Voltar
         elif submenu == "5":
             exit
     
-    #Produto
+    # Produto
     if menu == "2":
         print("-" * 11 + "  Produtos  " + "-" * 11)
         print("Escolha uma opção:")
         print("[1] Adicionar Produto")
         print("[2] Listar Produtos")
         print("[3] Remover Produto")
-        print("[4] Atualziar Produto")
+        print("[4] Atualizar Produto")
         print("[5] Voltar")
         submenu = input("Digite o número correspondente: ")
    
@@ -145,15 +147,71 @@ while loop == 1:
                 else:
                     print("Índice inválido.")
        
-        # Sair
+        # Voltar
         elif submenu == "5":
             exit
     
+    # Fornecedor
+    if menu == "3":
+        print("-" * 11 + "  Fornecedor  " + "-" * 11)
+        print("Escolha uma opção:")
+        print("[1] Adicionar Fornecedor")
+        print("[2] Listar Fornecedor")
+        print("[3] Remover Fornecedor")
+        print("[4] Atualizar Fornecedor")
+        print("[5] Voltar")
+        submenu = input("Digite o número correspondente: ")
+   
+         # Adicionar
+        if submenu == "1":
+            fornecedor = Fornecedor.criar_por_input()
+            if fornecedor: 
+                fornecedor_cadastrados.append(fornecedor)
+            else:
+                print("Fornecedor não foi cadastrado devido a dados inválidos.")
 
-
-
+        # Listar
+        elif submenu == "2":
+            if not fornecedor_cadastrados:
+                print("Nenhum fornecedor cadastrado.")
+            else:
+                print("\n--- Lista de Fornecedor Cadastrados ---")
+                for i, fornecedor in enumerate(fornecedor_cadastrados, start=1):
+                    if fornecedor is not None:
+                        print(f"\nFornecedor {i}:")
+                        fornecedor.exibir()
+                    else:
+                        print(f"\nFornecedor {i} inválido (None).")
+        
+        # Remover  
+        elif submenu == "3":
+            if not fornecedor_cadastrados:
+                print("Nenhum fornecedor para remover.")
+            else:
+                for i, fornecedor in enumerate(fornecedor_cadastrados, start=1):
+                    print(f"[{i}] {fornecedor.nome} - CNPJ: {fornecedor.cnpj}")
+                indice = int(input("Digite o número do fornecedor que deseja remover: ")) - 1
+                if 0 <= indice < len(fornecedor_cadastrados):
+                    removido = fornecedor_cadastrados.pop(indice)
+                    print(f"Fornecedor '{removido.nome}' removido com sucesso.")
+                else:
+                    print("Índice inválido.")
+        
+        # Atualizar  
+        elif submenu == "4":
+            if not fornecedor_cadastrados:
+                print("Nenhum produto para atualizar.")
+            else:
+                for i, fornecedor in enumerate(fornecedor_cadastrados, start=1):
+                    print(f"[{i}] {fornecedor.nome} - CNPJ: {fornecedor.cnpj}")
+                indice = int(input("Digite o número do fornecedor que deseja atualizar: ")) - 1
+                if 0 <= indice < len(fornecedor_cadastrados):
+                    fornecedor_atualizar = fornecedor_cadastrados[indice]
+                    fornecedor_atualizar.atualizar_dados()
+                else:
+                    print("Índice inválido.")
+       
+        # Voltar
+        elif submenu == "5":
+            exit
                 
-
-
-
-
