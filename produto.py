@@ -10,15 +10,15 @@ class Produto:
 
     def criar_por_input():
         nome = input("Nome: ")
-        valorVenda = input("Valor de Venda: ")
-        valorCompra = input("Valor de Compra: ")
+        valorVenda = float(input("Valor de Venda: "))
+        valorCompra = float(input("Valor de Compra: "))
         fornecedor = input("CNPJ Fornecedor:" )
         estoque = input("Quantidade em estoque: ")
         validade = input("Data de Validade: ")
         id = input("Id do Produto: ")
           
         print("Produto Cadastado com sucesso!")
-        return (nome, valorVenda, valorCompra, fornecedor, estoque, validade, id)
+        return Produto(nome, valorVenda, valorCompra, fornecedor, estoque, validade, id)
            
     def atualizar_dados(self):
         
@@ -40,8 +40,7 @@ class Produto:
         print("Produto atualizado com sucesso!")
 
     def exibir(self):
-        print("-" * 30)
-        print(f"Nome: {self.nome} | Valor: R${self.valorVenda:.2f} | Valor Compra: R${self.valorCompra:.2f} | Fornecedor: {self.fornecedor} | Estoque: {self.estoque} | Validade: {self.validade} | Id: {self.id}")
+        print(f"Nome: {self.nome} | Valor: R${self.valorVenda}| Valor Compra: R${self.valorCompra} | Fornecedor: {self.fornecedor} | Estoque: {self.estoque} | Validade: {self.validade} | Id: {self.id}")
 
         
 

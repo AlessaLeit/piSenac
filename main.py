@@ -9,7 +9,7 @@ loop = 1
 clientes_cadastrados = []
 produtos_cadastrados = []
 while loop == 1:
-    print("-" * 10 + "  SOFTWARE  " + "-" * 10)
+    print("\n-" * 10 + "  SOFTWARE  " + "-" * 10)
     print("Escolha uma opção:")
     print("[1] Cliente")
     print("[2] Produtos")
