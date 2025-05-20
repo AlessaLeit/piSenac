@@ -3,6 +3,7 @@ import re
 from pessoa import Pessoa
 
 class Cliente(Pessoa):
+    
     @classmethod
     def criar_por_input(cls):
         nome = input("Nome: ")

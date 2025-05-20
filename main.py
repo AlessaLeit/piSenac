@@ -4,6 +4,7 @@ import re
 
 from cliente import Cliente
 from fornecedor import Fornecedor
+from funcionario import Funcionario
 from servico import Servico
 from produto import Produto
 
@@ -12,6 +13,7 @@ clientes_cadastrados = []
 produtos_cadastrados = []
 fornecedor_cadastrados = []
 servico_cadastrados = []
+funcionario_cadastrados = []
 while loop == 1:
     print("\n" + "-" * 10 + "  SOFTWARE  " + "-" * 10)
     print("Escolha uma opção:")
@@ -282,3 +284,66 @@ while loop == 1:
             exit
     
     #Funcionários
+    if menu == "5":
+        print("-" * 11 + "  FUNCIONÁRIOS  " + "-" * 11)
+        print("Escolha uma opção:")
+        print("[1] Adicionar Funcionário")
+        print("[2] Listar Funcionário")
+        print("[3] Remover Funcionário")
+        print("[4] Atualizar Funcionário")
+        print("[5] Voltar")
+        submenu = input("Digite o número correspondente: ")
+            
+        # Adicionar
+        if submenu == "1":
+            funcionario = Funcionario.criar_por_input()
+            if funcionario: 
+                funcionario_cadastrados.append(funcionario)
+            else:
+                    print("Funcionário não foi cadastrado devido a dados inválidos.")
+
+        # Listar
+        elif submenu == "2":
+            if not funcionario_cadastrados:
+                print("\nNenhum funcionário cadastrado.")
+            else:
+                print("\n--- Lista de Funcionários Cadastrados ---")
+            for i, funcionario in enumerate(funcionario_cadastrados, start=1):
+                if funcionario is not None:
+                    print(f"\nFuncionário {i}:")
+                    funcionario.exibir()
+                else:
+                    print(f"\nFuncionário {i} inválido (None).")
+            
+        # Remover  
+        elif submenu == "3":
+            if not funcionario_cadastrados:
+                print("\nNenhum funcionário para remover.")
+            else:
+                for i, funcionario in enumerate(funcionario_cadastrados, start=1):
+                    print(f"[{i}] {funcionario.nome} - CTPS: {funcionario.ctps} - NIS: {funcionario.nis}")
+                indice = int(input("Digite o número do funcionário que deseja remover: ")) - 1
+                if 0 <= indice < len(funcionario_cadastrados):
+                    removido = funcionario_cadastrados.pop(indice)
+                    print(f"Funcionário '{removido.nome}' removido com sucesso.")
+                else:
+                    print("Índice inválido.")
+            
+        # Atualizar  
+        elif submenu == "4":
+            if not funcionario_cadastrados:
+                print("\nNenhum funcionário para atualizar.")
+            else:
+                for i, funcionario in enumerate(funcionario_cadastrados, start=1):
+                    print(f"[{i}] {funcionario.nome} - CTPS: {funcionario.ctps} - NIS: {funcionario.nis}")
+                indice = int(input("Digite o número do funcionário que deseja atualizar: ")) - 1
+                if 0 <= indice < len(funcionario_cadastrados):
+                    funcionario_atualizar = funcionario_cadastrados[indice]
+                    funcionario_atualizar.atualizar_dados()
+                else:
+                    print("Índice inválido.")
+        
+        # Voltar
+        elif submenu == "5":
+            exit
+        
