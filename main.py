@@ -11,7 +11,7 @@ clientes_cadastrados = []
 produtos_cadastrados = []
 fornecedor_cadastrados = []
 while loop == 1:
-    print("\n-" * 10 + "  SOFTWARE  " + "-" * 10)
+    print("\n" + "-" * 10 + "  SOFTWARE  " + "-" * 10)
     print("Escolha uma opção:")
     print("[1] Cliente")
     print("[2] Produtos")
@@ -45,7 +45,7 @@ while loop == 1:
         # Listar
         elif submenu == "2":
             if not clientes_cadastrados:
-                print("Nenhum cliente cadastrado.")
+                print("\nNenhum cliente cadastrado.")
             else:
                 print("\n--- Lista de Clientes Cadastrados ---")
                 for i, cliente in enumerate(clientes_cadastrados, start=1):
@@ -58,7 +58,7 @@ while loop == 1:
         # Remover  
         elif submenu == "3":
             if not clientes_cadastrados:
-                print("Nenhum cliente para remover.")
+                print("\nNenhum cliente para remover.")
             else:
                 for i, cliente in enumerate(clientes_cadastrados, start=1):
                     print(f"[{i}] {cliente.nome} - CPF: {cliente.cpf}")
@@ -72,7 +72,7 @@ while loop == 1:
         # Atualizar  
         elif submenu == "4":
             if not clientes_cadastrados:
-                print("Nenhum cliente para atualizar.")
+                print("\nNenhum cliente para atualizar.")
             else:
                 for i, cliente in enumerate(clientes_cadastrados, start=1):
                     print(f"[{i}] {cliente.nome} - CPF: {cliente.cpf}")
@@ -109,7 +109,7 @@ while loop == 1:
         # Listar
         elif submenu == "2":
             if not produtos_cadastrados:
-                print("Nenhum produto cadastrado.")
+                print("\nNenhum produto cadastrado.")
             else:
                 print("\n--- Lista de Produtos Cadastrados ---")
                 for i, produto in enumerate(produtos_cadastrados, start=1):
@@ -122,7 +122,7 @@ while loop == 1:
         # Remover  
         elif submenu == "3":
             if not produtos_cadastrados:
-                print("Nenhum produto para remover.")
+                print("\nNenhum produto para remover.")
             else:
                 for i, produto in enumerate(produtos_cadastrados, start=1):
                     print(f"[{i}] {produto.nome} - ID: {produto.id}")
@@ -136,7 +136,7 @@ while loop == 1:
         # Atualizar  
         elif submenu == "4":
             if not produtos_cadastrados:
-                print("Nenhum produto para atualizar.")
+                print("\nNenhum produto para atualizar.")
             else:
                 for i, produto in enumerate(produtos_cadastrados, start=1):
                     print(f"[{i}] {produto.nome} - ID: {produto.id}")
@@ -168,12 +168,12 @@ while loop == 1:
             if fornecedor: 
                 fornecedor_cadastrados.append(fornecedor)
             else:
-                print("Fornecedor não foi cadastrado devido a dados inválidos.")
+                print("\nFornecedor não foi cadastrado devido a dados inválidos.")
 
         # Listar
         elif submenu == "2":
             if not fornecedor_cadastrados:
-                print("Nenhum fornecedor cadastrado.")
+                print("\nNenhum fornecedor cadastrado.")
             else:
                 print("\n--- Lista de Fornecedor Cadastrados ---")
                 for i, fornecedor in enumerate(fornecedor_cadastrados, start=1):
@@ -186,7 +186,7 @@ while loop == 1:
         # Remover  
         elif submenu == "3":
             if not fornecedor_cadastrados:
-                print("Nenhum fornecedor para remover.")
+                print("\nNenhum fornecedor para remover.")
             else:
                 for i, fornecedor in enumerate(fornecedor_cadastrados, start=1):
                     print(f"[{i}] {fornecedor.nome} - CNPJ: {fornecedor.cnpj}")
@@ -200,7 +200,7 @@ while loop == 1:
         # Atualizar  
         elif submenu == "4":
             if not fornecedor_cadastrados:
-                print("Nenhum produto para atualizar.")
+                print("\nNenhum produto para atualizar.")
             else:
                 for i, fornecedor in enumerate(fornecedor_cadastrados, start=1):
                     print(f"[{i}] {fornecedor.nome} - CNPJ: {fornecedor.cnpj}")
