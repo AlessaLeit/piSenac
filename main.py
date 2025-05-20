@@ -4,12 +4,14 @@ import re
 
 from cliente import Cliente
 from fornecedor import Fornecedor
+from servico import Servico
 from produto import Produto
 
 loop = 1 
 clientes_cadastrados = []
 produtos_cadastrados = []
 fornecedor_cadastrados = []
+servico_cadastrados = []
 while loop == 1:
     print("\n" + "-" * 10 + "  SOFTWARE  " + "-" * 10)
     print("Escolha uma opção:")
@@ -215,3 +217,68 @@ while loop == 1:
         elif submenu == "5":
             exit
                 
+    # Serviços
+    if menu == "4":
+        print("-" * 11 + "  SERVIÇOS  " + "-" * 11)
+        print("Escolha uma opção:")
+        print("[1] Adicionar Serviço")
+        print("[2] Listar Serviço")
+        print("[3] Remover Serviço")
+        print("[4] Atualizar Serviço")
+        print("[5] Voltar")
+        submenu = input("Digite o número correspondente: ")
+        
+        # Adicionar
+        if submenu == "1":
+            servico = Servico.criar_por_input()
+            if servico: 
+                servico_cadastrados.append(servico)
+            else:
+                print("Serviço não foi cadastrado devido a dados inválidos.")
+
+        # Listar
+        elif submenu == "2":
+            if not servico_cadastrados:
+                print("\nNenhum serviço cadastrado.")
+            else:
+                print("\n--- Lista de Serviços Cadastrados ---")
+                for i, servico in enumerate(servico_cadastrados, start=1):
+                    if servico is not None:
+                        print(f"\nServiço {i}:")
+                        servico.exibir()
+                    else:
+                        print(f"\nServiço {i} inválido (None).")
+        
+        # Remover  
+        elif submenu == "3":
+            if not servico_cadastrados:
+                print("\nNenhum serviço para remover.")
+            else:
+                for i, servico in enumerate(servico_cadastrados, start=1):
+                    print(f"[{i}] {servico.nome} - Valor: {servico.valor} - Tempo: {servico.tempoExe}")
+                indice = int(input("Digite o número do serviço que deseja remover: ")) - 1
+                if 0 <= indice < len(servico_cadastrados):
+                    removido = servico_cadastrados.pop(indice)
+                    print(f"Serviço '{removido.nome}' removido com sucesso.")
+                else:
+                    print("Índice inválido.")
+        
+        # Atualizar  
+        elif submenu == "4":
+            if not servico_cadastrados:
+                print("\nNenhum serviço para atualizar.")
+            else:
+                for i, servico in enumerate(servico_cadastrados, start=1):
+                    print(f"[{i}] {servico.nome} - Valor: {servico.valor} - Tempo: {servico.tempoExe}")
+                indice = int(input("Digite o número do serviço que deseja atualizar: ")) - 1
+                if 0 <= indice < len(servico_cadastrados):
+                    servico_atualizar = servico_cadastrados[indice]
+                    servico_atualizar.atualizar_dados()
+                else:
+                    print("Índice inválido.")
+    
+        # Voltar
+        elif submenu == "5":
+            exit
+    
+    #Funcionários
