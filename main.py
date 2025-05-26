@@ -2,18 +2,26 @@ from datetime import datetime
 from queue import Full
 import re
 
-from cliente import Cliente
-from fornecedor import Fornecedor
-from funcionario import Funcionario
-from servico import Servico
-from produto import Produto
+from models.cliente import Cliente
+from models.fornecedor import Fornecedor
+from models.funcionario import Funcionario
+from models.servico import Servico
+from models.produto import Produto
+from models.financeiro import Financeiro
+from models.suprimento import Suprimento
 
 loop = 1 
+financeiro = Financeiro()
+
 clientes_cadastrados = []
 produtos_cadastrados = []
 fornecedor_cadastrados = []
 servico_cadastrados = []
 funcionario_cadastrados = []
+suprimentos_cadastrados = []
+agenda_cadastrada = []
+lancamentos_financeiros = []
+
 while loop == 1:
     print("\n" + "-" * 10 + "  SOFTWARE  " + "-" * 10)
     print("Escolha uma opção:")
@@ -283,7 +291,7 @@ while loop == 1:
         elif submenu == "5":
             exit
     
-    #Funcionários
+    # Funcionários
     if menu == "5":
         print("-" * 11 + "  FUNCIONÁRIOS  " + "-" * 11)
         print("Escolha uma opção:")
@@ -346,4 +354,215 @@ while loop == 1:
         # Voltar
         elif submenu == "5":
             exit
-        
+    
+    # Suprimentos
+    if menu == "6":
+        print("-" * 11 + "  SUPRIMENTOS  " + "-" * 11)
+        print("Escolha uma opção:")
+        print("[1] Adicionar Suprimento")
+        print("[2] Listar Suprimentos")
+        print("[3] Remover Suprimento")
+        print("[4] Atualizar Suprimento")
+        print("[5] Voltar")
+        submenu = input("Digite o número correspondente: ")
+
+        if submenu == "1":
+            suprimento = Suprimento.criar_por_input()
+            if suprimento:
+                suprimentos_cadastrados.append(suprimento)
+            else:
+                print("Suprimento não foi cadastrado devido a dados inválidos.")
+
+        elif submenu == "2":
+            if not suprimentos_cadastrados:
+                print("\nNenhum suprimento cadastrado.")
+            else:
+                print("\n--- Lista de Suprimentos Cadastrados ---")
+                for i, s in enumerate(suprimentos_cadastrados, start=1):
+                    print(f"\nSuprimento {i}:")
+                    s.exibir()
+
+        elif submenu == "3":
+            if not suprimentos_cadastrados:
+                print("\nNenhum suprimento para remover.")
+            else:
+                for i, s in enumerate(suprimentos_cadastrados, start=1):
+                    print(f"[{i}] {s.nome}")
+                indice = int(input("Digite o número do suprimento que deseja remover: ")) - 1
+                if 0 <= indice < len(suprimentos_cadastrados):
+                    removido = suprimentos_cadastrados.pop(indice)
+                    print(f"Suprimento '{removido.nome}' removido com sucesso.")
+                else:
+                    print("Índice inválido.")
+
+        elif submenu == "4":
+            if not suprimentos_cadastrados:
+                print("\nNenhum suprimento para atualizar.")
+            else:
+                for i, s in enumerate(suprimentos_cadastrados, start=1):
+                    print(f"[{i}] {s.nome}")
+                indice = int(input("Digite o número do suprimento que deseja atualizar: ")) - 1
+                if 0 <= indice < len(suprimentos_cadastrados):
+                    suprimentos_cadastrados[indice].atualizar_dados()
+                else:
+                    print("Índice inválido.")
+
+        elif submenu == "5":
+            exit
+
+    # Agenda
+    if menu == "7":
+        print("-" * 11 + "  AGENDA  " + "-" * 11)
+        print("Escolha uma opção:")
+        print("[1] Adicionar Horário")
+        print("[2] Listar Horários")
+        print("[3] Remover Horário")
+        print("[4] Voltar")
+        submenu = input("Digite o número correspondente: ")
+
+        # Adicionar
+        if submenu == "1":
+            if not clientes_cadastrados:
+                print("Cadastre ao menos um cliente antes de agendar.")
+            else:
+                for i, cliente in enumerate(clientes_cadastrados, start=1):
+                    print(f"[{i}] {cliente.nome}")
+                idx_cliente = int(input("Escolha o cliente: ")) - 1
+                cliente = clientes_cadastrados[idx_cliente]
+
+                data = input("Data (DD/MM/AAAA): ")
+                hora = input("Hora (HH:MM): ")
+
+                # Selecionar serviços
+                servicos_selecionados = []
+                if not servico_cadastrados:
+                    print("Nenhum serviço disponível.")
+                else:
+                    print("Selecione os serviços (0 para terminar):")
+                    while True:
+                        for i, s in enumerate(servico_cadastrados, start=1):
+                            print(f"[{i}] {s.nome} - R${s.valor}")
+                        op = int(input("Número do serviço: "))
+                        if op == 0:
+                            break
+                        if 1 <= op <= len(servico_cadastrados):
+                            servicos_selecionados.append(servico_cadastrados[op - 1])
+                        else:
+                            print("Opção inválida.")
+
+                # Selecionar suprimentos
+                suprimentos_selecionados = []
+                if not suprimentos_cadastrados:
+                    print("Nenhum suprimento disponível.")
+                else:
+                    print("Selecione os suprimentos (0 para terminar):")
+                    while True:
+                        for i, s in enumerate(suprimentos_cadastrados, start=1):
+                            print(f"[{i}] {s.nome} - R${s.valor}")
+                        op = int(input("Número do suprimento: "))
+                        if op == 0:
+                            break
+                        if 1 <= op <= len(suprimentos_cadastrados):
+                            suprimentos_selecionados.append(suprimentos_cadastrados[op - 1])
+                        else:
+                            print("Opção inválida.")
+
+                from models.agenda import Agenda
+                compromisso = Agenda(data, hora, cliente, servicos_selecionados, suprimentos_selecionados)
+                agenda_cadastrada.append(compromisso)
+                print("Compromisso registrado com sucesso!")
+
+        # Listar
+        elif submenu == "2":
+            if not agenda_cadastrada:
+                print("Nenhum compromisso registrado.")
+            else:
+                print("\n--- Lista de Compromissos ---")
+                for i, ag in enumerate(agenda_cadastrada, start=1):
+                    print(f"\nCompromisso {i}:")
+                    ag.exibir_agendamento()
+
+        # Remover
+        elif submenu == "3":
+            if not agenda_cadastrada:
+                print("Nenhum compromisso para remover.")
+            else:
+                for i, ag in enumerate(agenda_cadastrada, start=1):
+                    print(f"[{i}] {ag.data} - {ag.cliente.nome}")
+                idx = int(input("Digite o número do compromisso a remover: ")) - 1
+                if 0 <= idx < len(agenda_cadastrada):
+                    removido = agenda_cadastrada.pop(idx)
+                    print(f"Compromisso com {removido.cliente.nome} em {removido.data} removido.")
+                else:
+                    print("Índice inválido.")
+
+        # Voltar
+        elif submenu == "4":
+            exit
+
+    # Financeiro
+    if menu == "8":
+        print("-" * 11 + "  FINANCEIRO  " + "-" * 11)
+        print("Escolha uma opção:")
+        print("[1] Registrar Entrada (Receita de Cliente)")
+        print("[2] Registrar Saída (Despesa)")
+        print("[3] Calcular Comissão de Funcionário")
+        print("[4] Exibir Relatório Financeiro")
+        print("[5] Voltar")
+        submenu = input("Digite o número correspondente: ")
+
+        # Registrar entrada
+        if submenu == "1":
+            if not clientes_cadastrados or not agenda_cadastrada:
+                print("Você precisa ter pelo menos um cliente e um agendamento registrado.")
+            else:
+                for i, cliente in enumerate(clientes_cadastrados, start=1):
+                    print(f"[{i}] {cliente.nome}")
+                idx_cliente = int(input("Selecione o cliente: ")) - 1
+
+                for i, ag in enumerate(agenda_cadastrada, start=1):
+                    print(f"[{i}] {ag.titulo} - {ag.data}")
+                idx_agenda = int(input("Selecione o compromisso relacionado: ")) - 1
+
+                valor = float(input("Valor recebido: R$ "))
+                descricao = input("Descrição da entrada: ")
+
+                financeiro.registrar_entrada(
+                    clientes_cadastrados[idx_cliente], valor, descricao, agenda_cadastrada[idx_agenda]
+                )
+                print("Entrada registrada com sucesso.")
+
+        # Registrar saída
+        elif submenu == "2":
+            if not agenda_cadastrada:
+                print("Você precisa ter pelo menos um compromisso registrado.")
+            else:
+                for i, ag in enumerate(agenda_cadastrada, start=1):
+                    print(f"[{i}] {ag.titulo} - {ag.data}")
+                idx_agenda = int(input("Selecione o compromisso relacionado: ")) - 1
+
+                valor = float(input("Valor da despesa: R$ "))
+                descricao = input("Descrição da saída: ")
+
+                financeiro.registrar_saida(valor, descricao, agenda_cadastrada[idx_agenda])
+                print("Saída registrada com sucesso.")
+
+        # Calcular comissão
+        elif submenu == "3":
+            if not funcionario_cadastrados:
+                print("Nenhum funcionário cadastrado.")
+            else:
+                for i, func in enumerate(funcionario_cadastrados, start=1):
+                    print(f"[{i}] {func.nome}")
+                idx_func = int(input("Selecione o funcionário: ")) - 1
+                percentual = float(input("Percentual de comissão (%): "))
+                financeiro.calcular_comissao(funcionario_cadastrados[idx_func], percentual)
+                print("Comissão registrada com sucesso.")
+
+        # Exibir relatório
+        elif submenu == "4":
+            financeiro.exibir_financeiro()
+
+        # Voltar
+        elif submenu == "5":
+            exit

@@ -11,5 +11,5 @@ class Entidade(ABC):
         pass
 
     @abstractmethod
-    def atualizar_por_input(self):
+    def atualizar_dados(self):
         pass

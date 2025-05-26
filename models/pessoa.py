@@ -1,29 +1,16 @@
 import re
+from models.entidade import Entidade
 
-from pessoa import Pessoa
-
-class Cliente(Pessoa):
-    
-    @classmethod
-    def criar_por_input(cls):
-        nome = input("Nome: ")
-        cpf = input("CPF (11 dígitos): ")
-        while not cpf.isdigit() or len(cpf) != 11:
-            print("CPF inválido! Deve conter exatamente 11 dígitos numéricos.")
-            cpf = input("CPF (11 dígitos): ")
-            
-        telefone = input("Telefone: ")
-        email = input("Email: ")
-        while not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            print("Email inválido!")
-            email = input("Email: ")
+class Pessoa(Entidade):
+    def __init__(self, nome, cpf, telefone, email, endereco):
+        self.nome = nome
+        self.cpf = cpf
+        self.telefone = telefone
+        self.email = email
+        self.endereco = endereco
         
-        endereco = input("Endereço: ")
-        return cls(nome, cpf, telefone, email, endereco)
-
-
     def atualizar_dados(self):
-        
+ 
         print("Digite os novos dados (ou pressione Enter para manter o valor atual):")
         novo_nome = input(f"Nome atual: {self.nome}\nNovo nome: ") or self.nome
         novo_cpf = input(f"CPF atual: {self.cpf}\nNovo CPF (11 dígitos): ") or self.cpf
@@ -44,12 +31,11 @@ class Cliente(Pessoa):
         self.telefone = novo_telefone
         self.email = novo_email
         self.endereco = novo_endereco
-
-        print("Cliente atualizado com sucesso!")
-
-
+        
     def exibir(self):
         print("-" * 30)
         print(f"Nome: {self.nome} | CPF: {self.cpf} | Telefone: {self.telefone} | Email: {self.email} | Endereço: {self.endereco}")
+
+
 
 
