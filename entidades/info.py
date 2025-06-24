@@ -35,14 +35,17 @@ class Informacao:
 
     @telefone.setter
     def telefone(self, numero_telefone_str: str) -> None:
-        # A exceção específica agora é propagada pelo validador
+        if numero_telefone_str is None or str(numero_telefone_str).strip() == "":
+            self._telefone = ""
+            return
         try:
-            numero_formatado = Informacao.validar_e_formatar_telefone_brasileiro(numero_telefone_str)
+            numero_formatado = Informacao.validar_e_formatar_telefone_brasileiro(str(numero_telefone_str))
             if numero_formatado is None:
                 raise ValueError("Formato de número de telefone brasileiro inválido.")
             self._telefone = numero_formatado
         except ValueError as e:
-            raise e # Repassa a exceção específica do validador
+            raise e
+
 
     @property
     def email(self) -> str:
@@ -66,6 +69,10 @@ class Informacao:
 
     @endereco.setter
     def endereco(self, endereco_str: str) -> None:
+        if endereco_str is None or str(endereco_str).strip() == "":
+            self._endereco = {}
+            return
+        
         # Padrão flexível: "Rua, Número" ou "Rua, Número, Bairro, Cidade, Estado"
         padrao_endereco = re.compile(r"""
             ^\s*
@@ -108,7 +115,8 @@ class Informacao:
 
     @redes_sociais.setter
     def redes_sociais(self, redes_sociais_str: str) -> None:
-        self._redes_sociais = str(redes_sociais_str).strip()
+        self._redes_sociais = str(redes_sociais_str).strip() if redes_sociais_str else ""
+
 
 
     DDDS = {
