@@ -7,8 +7,7 @@ from db_connection import DBConnection
 class Fornecedor:
     # Representa um fornecedor de produtos ou serviços.
     _fornecedores_por_cnpj: dict[str, 'Fornecedor'] = {}
-    _fornecedores_por_id: dict[int, 'Fornecedor'] = {}
-    _proximo_id_disponivel: int = 1
+    _fornecedores_por_id: dict[str, 'Fornecedor'] = {}
     db_conn = DBConnection(host="localhost", database="pi", user="root", password="root")
 
     def __init__(self, id_fornecedor: Optional[int], nome: str, cnpj: str, info_contato: mod_info.Informacao) -> None:
@@ -18,24 +17,18 @@ class Fornecedor:
 
         if id_fornecedor is None:
             # Tenta inserir um novo fornecedor no banco de dados
-            query = "INSERT INTO fornecedor (nome, cnpj, telefone, endereco, redes) VALUES (%s, %s, %s, %s, %s)"
+            query = "INSERT INTO fornecedor (nome, cnpj, telefone, endereco, redes, email) VALUES (%s, %s, %s, %s, %s, %s)"
             params = (
                 self.nome,
                 self.cnpj,
                 self.info_contato.telefone,
                 str(self.info_contato.endereco),
-                self.info_contato.redes_sociais
+                self.info_contato.redes_sociais,
+                self.info_contato.email
             )
             self.db_conn.connect()
             result = self.db_conn.execute_query(query, params)
-            if result:
-                # Se a inserção for bem-sucedida, recupera o ID gerado
-                query_id = "SELECT LAST_INSERT_ID() as id_fornecedor"
-                new_id = self.db_conn.execute_query(query_id, fetch_one=True)
-                self._id = new_id["id_fornecedor"]
-            else:
-                raise ValueError("Erro ao criar fornecedor no banco de dados.")
-            self.db_conn.disconnect()
+
         else:
             # Se um ID for fornecido, tenta carregar o fornecedor do banco de dados
             query = "SELECT * FROM fornecedor WHERE id_fornecedor = %s"
@@ -51,7 +44,8 @@ class Fornecedor:
                 self.info_contato = mod_info.Informacao(
                     fornecedor_data["telefone"],
                     fornecedor_data["endereco"],
-                    fornecedor_data["redes"]
+                    fornecedor_data["redes"],
+                    fornecedor_data["email"]
                 )
             else:
                 raise ValueError(f"Fornecedor com ID {id_fornecedor} não encontrado.")
@@ -65,7 +59,7 @@ class Fornecedor:
                 f"info_contato={self.info_contato!r})")
 
     @property
-    def id(self) -> int:
+    def id(self) -> str:
         return self._id
 
     @property
@@ -90,6 +84,16 @@ class Fornecedor:
             raise ValueError("CNPJ inválido: Deve conter exatamente 14 dígitos.")
         if not Fornecedor._eh_cnpj_valido(cnpj_limpo):
             raise ValueError("CNPJ inválido: Dígitos verificadores não correspondem ou padrão inválido.")
+
+        # Verifica se já existe no banco (exceto se for o mesmo fornecedor durante update)
+        Fornecedor.db_conn.connect()
+        query = "SELECT id_fornecedor FROM fornecedor WHERE cnpj = %s"
+        result = Fornecedor.db_conn.execute_query(query, (cnpj_limpo,), fetch_one=True)
+        Fornecedor.db_conn.disconnect()
+
+        if result and (not hasattr(self, "_id") or self._id != result["id_fornecedor"]):
+            raise ValueError(f"CNPJ já cadastrado para outro fornecedor (ID: {result['id_fornecedor']}).")
+
         cnpj_formatado: str = (
             f"{cnpj_limpo[:2]}.{cnpj_limpo[2:5]}.{cnpj_limpo[5:8]}/"
             f"{cnpj_limpo[8:12]}-{cnpj_limpo[12:]}"
@@ -121,7 +125,6 @@ class Fornecedor:
             segundo_dv_calculado = 0
         return segundo_dv_calculado == int(numeros_cnpj[13])
 
-
     @property
     def info_contato(self) -> mod_info.Informacao:
         return self._info_contato
@@ -147,18 +150,18 @@ class Fornecedor:
                 mod_info.Informacao(
                     fornecedor_data["telefone"],
                     fornecedor_data["endereco"],
-                    fornecedor_data["redes"]
+                    fornecedor_data["redes"],
+                    fornecedor_data["email"]
                 )
             )
         return None
 
     @staticmethod
-    def buscar_fornecedor_id(id_fornecedor: int) -> Optional["Fornecedor"]:
+    def buscar_fornecedor_id(id_fornecedor: str) -> Optional["Fornecedor"]:
         query = "SELECT * FROM fornecedor WHERE id_fornecedor = %s"
         params = (id_fornecedor,)
         Fornecedor.db_conn.connect()
         fornecedor_data = Fornecedor.db_conn.execute_query(query, params, fetch_one=True)
-        Fornecedor.db_conn.disconnect()
         if fornecedor_data:
             return Fornecedor(
                 fornecedor_data["id_fornecedor"],
@@ -167,9 +170,11 @@ class Fornecedor:
                 mod_info.Informacao(
                     fornecedor_data["telefone"],
                     fornecedor_data["endereco"],
-                    fornecedor_data["redes"]
+                    fornecedor_data["redes"],
+                    fornecedor_data["email"]
                 )
             )
+        Fornecedor.db_conn.disconnect()
         return None
 
     @staticmethod
@@ -178,7 +183,6 @@ class Fornecedor:
         params = (nome,)
         Fornecedor.db_conn.connect()
         fornecedor_data = Fornecedor.db_conn.execute_query(query, params, fetch_one=True)
-        Fornecedor.db_conn.disconnect()
         if fornecedor_data:
             return Fornecedor(
                 fornecedor_data["id_fornecedor"],
@@ -187,9 +191,11 @@ class Fornecedor:
                 mod_info.Informacao(
                     fornecedor_data["telefone"],
                     fornecedor_data["endereco"],
-                    fornecedor_data["redes"]
+                    fornecedor_data["redes"],
+                    fornecedor_data["email"]
                 )
             )
+        Fornecedor.db_conn.disconnect()
         return None
 
     @staticmethod
@@ -198,7 +204,6 @@ class Fornecedor:
         params = (f"%{nome_parcial.lower()}%",)
         Fornecedor.db_conn.connect()
         fornecedores_data = Fornecedor.db_conn.execute_query(query, params, fetch_all=True)
-        Fornecedor.db_conn.disconnect()
         resultados = []
         if fornecedores_data:
             for fornecedor_data in fornecedores_data:
@@ -209,9 +214,11 @@ class Fornecedor:
                     mod_info.Informacao(
                         fornecedor_data["telefone"],
                         fornecedor_data["endereco"],
-                        fornecedor_data["redes"]
+                        fornecedor_data["redes"],
+                        fornecedor_data["email"]
                     )
                 ))
+        Fornecedor.db_conn.disconnect()
         return resultados
 
     @staticmethod
@@ -219,7 +226,6 @@ class Fornecedor:
         query = "SELECT * FROM fornecedor"
         Fornecedor.db_conn.connect()
         fornecedores_data = Fornecedor.db_conn.execute_query(query, fetch_all=True)
-        Fornecedor.db_conn.disconnect()
         resultados = []
         if fornecedores_data:
             for fornecedor_data in fornecedores_data:
@@ -230,13 +236,15 @@ class Fornecedor:
                     mod_info.Informacao(
                         fornecedor_data["telefone"],
                         fornecedor_data["endereco"],
-                        fornecedor_data["redes"]
+                        fornecedor_data["redes"],
+                        fornecedor_data["email"]
                     )
                 ))
+        Fornecedor.db_conn.disconnect()
         return resultados
 
     @staticmethod
-    def atualizar_dados_fornecedor(id_fornecedor: int, **kwargs: Any) -> None:
+    def atualizar_dados_fornecedor(id_fornecedor: str, **kwargs: Any) -> None:
         fornecedor_existente: Optional["Fornecedor"] = Fornecedor.buscar_fornecedor_id(id_fornecedor)
         if not fornecedor_existente:
             raise ValueError(f"Fornecedor com ID {id_fornecedor} não encontrado para atualização.")
@@ -256,6 +264,8 @@ class Fornecedor:
                 params.append(str(valor.endereco))
                 updates.append("redes = %s")
                 params.append(valor.redes_sociais)
+                updates.append("email = %s")
+                params.append(valor.email)
             elif chave == "cnpj":
                 # Validação de CNPJ já ocorre no setter da classe Fornecedor
                 fornecedor_existente.cnpj = valor # Chama o setter para validação
@@ -274,7 +284,7 @@ class Fornecedor:
             Fornecedor.db_conn.disconnect()
 
     @staticmethod
-    def atualizar_cnpj_fornecedor(id_fornecedor: int, novo_cnpj: str) -> None:
+    def atualizar_cnpj_fornecedor(id_fornecedor: str, novo_cnpj: str) -> None:
         fornecedor: Optional["Fornecedor"] = Fornecedor.buscar_fornecedor_id(id_fornecedor)
         if not fornecedor:
             raise ValueError(f"Fornecedor com ID {id_fornecedor} não encontrado para atualização de CNPJ.")
@@ -289,7 +299,7 @@ class Fornecedor:
         Fornecedor.db_conn.disconnect()
 
     @staticmethod
-    def deletar_fornecedor(id_fornecedor: int) -> None:
+    def deletar_fornecedor(id_fornecedor: str) -> None:
         query = "DELETE FROM fornecedor WHERE id_fornecedor = %s"
         params = (id_fornecedor,)
         Fornecedor.db_conn.connect()
@@ -308,19 +318,26 @@ class Fornecedor:
         if not fornecedores:
             return "Nenhum fornecedor para exibir."
 
-        cabecalhos = ["ID", "Nome", "CNPJ", "Telefone"]
+        cabecalhos = ["ID", "Nome", "CNPJ", "Telefone", "Endereço", "Redes", "Email"]
         dados_tabela = []
 
         for forn in fornecedores:
-            telefone_str = forn.info_contato.telefone
-            
+            telefone_str = str(forn.info_contato.telefone or "")
+            endereco_str = str(forn.info_contato.endereco or "")
+            redes_str = str(forn.info_contato.redes_sociais or "")
+            email_str = str(forn.info_contato.email or "")
+
             dados_tabela.append([
                 forn.id,
                 forn.nome,
                 forn.cnpj,
                 telefone_str,
+                endereco_str,
+                redes_str,
+                email_str,
             ])
         
         return tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid")
+
 
 

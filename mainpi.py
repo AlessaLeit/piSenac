@@ -1762,7 +1762,7 @@ def _cadastrar_fornecedor_ui():
    print("\n--- Informações de Contato ---")
    temp_telefone = solicitar_string("Telefone (Ex: +55 (11) 98765-4321 ou 11987654321)", min_len=8)
    temp_email = solicitar_string("Email (Ex: exemplo@dominio.com)", pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-   temp_endereco = solicitar_string("Endereço (Ex: Rua Nome, 123, Bairro, Cidade, UF ou Rua Nome, 123)", min_len=10)
+   temp_endereco = solicitar_string("Endereço (Ex: Rua Nome, 123, Bairro, Cidade, UF)", min_len=10)
    temp_redes_sociais = solicitar_string("Redes Sociais (opcional)", min_len=0)
 
    if any(item is None for item in [temp_telefone, temp_email, temp_endereco]):

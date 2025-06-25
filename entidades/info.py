@@ -2,16 +2,16 @@ import re
 from typing import Dict, Optional
 
 class Informacao:
-    def __init__(self, telefone: Optional[str] = None, email: Optional[str] = None, endereco: Optional[str] = None, redes_sociais: Optional[str] = None) -> None:
+    def __init__(self, telefone: Optional[str] = None, endereco: Optional[str] = None, redes_sociais: Optional[str] = None, email: Optional[str] = None) -> None:
         self.telefone = str(telefone) if telefone is not None else ""
-        self.email = str(email) if email is not None else ""
         self.endereco = str(endereco) if endereco is not None else ""
         self.redes_sociais = str(redes_sociais) if redes_sociais is not None else ""
+        self.email = str(email) if email is not None else ""
 
     def __str__(self) -> str:
         partes_endereco_str = []
         if self._endereco:
-            endereco_principal = f"{self._endereco['nome_rua']}, {self._endereco['numero']}"
+            endereco_principal = f"{self._endereco['rua']}, {self._endereco['numero']}"
             partes_endereco_str.append(endereco_principal)
 
             if self._endereco['bairro'] and self._endereco['cidade'] and self._endereco['estado']:
@@ -52,62 +52,77 @@ class Informacao:
         return self._email
 
     @email.setter
-    def email(self, email_str: str) -> None:
-        email_str = str(email_str).strip()
-        if email_str == "":
-            self._email = ""  # Aceita vazio sem validar
-            return
-        if re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email_str):
-            self._email = email_str
-        else:
-            raise ValueError("Formato de e-mail inválido.")
+    def email(self, email_str: Optional[str]) -> None:
+        try:
+            if not email_str or str(email_str).strip().lower() in ["", "none", "null"]:
+                self._email = ""
+                return
 
+            email_str = str(email_str).strip()
+            if re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email_str):
+                self._email = email_str
+            else:
+                raise ValueError("Formato de e-mail inválido.")
+        except Exception as e:
+            print(f"Erro ao validar email '{email_str}': {e}")
+            self._email = ""  # fallback defensivo
 
     @property
-    def endereco(self) -> Dict[str, Optional[str]]:
-        return self._endereco
+    def endereco(self) -> str:
+        if not hasattr(self, "_endereco") or not self._endereco:
+            return ""
+
+        partes = [self._endereco.get("rua", ""), self._endereco.get("numero", "")]
+        
+        if "bairro" in self._endereco:
+            partes.append(self._endereco["bairro"])
+        if "cidade" in self._endereco:
+            partes.append(self._endereco["cidade"])
+        if "estado" in self._endereco:
+            partes.append(self._endereco["estado"])
+
+        return ", ".join(partes)
+
 
     @endereco.setter
     def endereco(self, endereco_str: str) -> None:
-        if endereco_str is None or str(endereco_str).strip() == "":
+        if not endereco_str or endereco_str.strip().lower() in ["", "none", "null"]:
             self._endereco = {}
             return
-        
-        # Padrão flexível: "Rua, Número" ou "Rua, Número, Bairro, Cidade, Estado"
+
+        endereco_str = endereco_str.strip()
+
+        # Substitui hífens por vírgulas se tiver padrão comum
+        if "-" in endereco_str and "," in endereco_str:
+            endereco_str = endereco_str.replace(" - ", ", ")
+
         padrao_endereco = re.compile(r"""
             ^\s*
-            ([^,]+?)            # Grupo 1: Nome da rua
+            ([^,]+?)            # Rua
             \s*,\s*
-            ([\w\s./-]+?)       # Grupo 2: Número/complemento
-            (?:                 # Grupo opcional para Bairro, Cidade, Estado
+            ([^,]+?)            # Número
+            (?:\s*,\s*
+                ([^,]+?)        # Bairro
                 \s*,\s*
-                ([^,]+?)            # Grupo 3: Bairro
+                ([^,]+?)        # Cidade
                 \s*,\s*
-                ([^,]+?)            # Grupo 4: Cidade
-                \s*,\s*
-                ([A-Z]{2})          # Grupo 5: Estado (2 letras maiúsculas)
-            )?                  # Torna todo o grupo opcional
+                ([A-Z]{2})      # Estado
+            )?
             \s*$
         """, re.VERBOSE)
 
-        correspondencia = padrao_endereco.match(endereco_str)
+        match = padrao_endereco.match(endereco_str)
 
-        if correspondencia:
-            nome_rua = correspondencia.group(1).strip()
-            numero = correspondencia.group(2).strip()
-            bairro = correspondencia.group(3).strip() if correspondencia.group(3) else None
-            cidade = correspondencia.group(4).strip() if correspondencia.group(4) else None
-            estado = correspondencia.group(5).strip().upper() if correspondencia.group(5) else None
-
+        if match:
             self._endereco = {
-                "nome_rua": nome_rua,
-                "numero": numero,
-                "bairro": bairro,
-                "cidade": cidade,
-                "estado": estado
+                "rua": match.group(1).strip(),
+                "numero": match.group(2).strip()
             }
+            if match.group(3): self._endereco["bairro"] = match.group(3).strip()
+            if match.group(4): self._endereco["cidade"] = match.group(4).strip()
+            if match.group(5): self._endereco["estado"] = match.group(5).strip().upper()
         else:
-            raise ValueError("Formato de endereço inválido. Esperado: 'Nome da rua, número' ou 'Nome da rua, número, bairro, cidade, estado'")
+            raise ValueError("Formato de endereço inválido. Use: 'Rua, Número, Bairro, Cidade, Estado'")
 
     @property
     def redes_sociais(self) -> str:
