@@ -2,8 +2,8 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QPushButton, QTableView, QStackedWidget, QListWidget, QListWidgetItem,
                                QDialog, QLineEdit, QFormLayout, QMessageBox, QDialogButtonBox,
                                QComboBox, QDateEdit, QDoubleSpinBox, QCalendarWidget, QHeaderView,
-                               QLabel, QTimeEdit, QScrollArea, QButtonGroup)
-from PySide6.QtCore import (Qt, QAbstractTableModel, QModelIndex, QTime, QDate)
+                               QLabel, QTimeEdit, QScrollArea, QButtonGroup, QCompleter)
+from PySide6.QtCore import (Qt, QAbstractTableModel, QModelIndex, QTime, QDate, QStringListModel)
 from PySide6.QtGui import QFont, QPalette, QColor
 import sys
 from datetime import datetime, time
@@ -24,7 +24,6 @@ import despesa as crud_despesa
 import venda as crud_venda
 import info as mod_info
 
-# --- MODELOS DE DADOS ABSTRATOS E ESPECÍFICOS ---
 class ModeloTabelaSqlAlchemy(QAbstractTableModel):
     def __init__(self, colunas: List[str], parent=None):
         super().__init__(parent); self._dados, self._objetos, self._colunas = [], [], colunas; self.db_session = database.SessionLocal(); self.carregar_dados()
@@ -92,12 +91,11 @@ class ModeloItensAgenda(QAbstractTableModel):
     def data(self, i, r=Qt.ItemDataRole.DisplayRole):
         if i.isValid() and r == Qt.ItemDataRole.DisplayRole: return self._dados[i.row()][["nome", "quantidade"][i.column()]]
 
-# --- DIÁLOGOS DE EDIÇÃO/CRIAÇÃO ---
 class DialogoBase(QDialog):
     NOME_ENTIDADE = "Entidade"
     def __init__(self, objeto_edicao: Optional[Any] = None, parent: Optional[QWidget] = None, db_session=None):
         super().__init__(parent); self.objeto_edicao = objeto_edicao; self.setWindowTitle(f"{'Editar' if objeto_edicao else 'Adicionar'} {self.NOME_ENTIDADE}"); self.setMinimumWidth(450)
-        self.layout = QVBoxLayout(self); self.form_layout = QFormLayout(); self.db_session = db_session or database.SessionLocal()
+        self.layout = QVBoxLayout(self); self.form_layout = QFormLayout(); self.db_session = db_session or database.SessionLocal(); self._is_session_owner = not db_session
         self.criar_widgets()
         if self.objeto_edicao: self.preencher_dados()
         self.botoes = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel); self.botoes.accepted.connect(self.accept); self.botoes.rejected.connect(self.reject)
@@ -109,7 +107,7 @@ class DialogoBase(QDialog):
         try: self.salvar_dados(); self.db_session.commit(); QMessageBox.information(self, "Sucesso", "Operação realizada com sucesso."); super().accept()
         except Exception as e: self.db_session.rollback(); QMessageBox.critical(self, "Erro", f"Ocorreu um erro: {e}\n\nA operação foi revertida.")
     def __del__(self):
-        if not self.parent(): self.db_session.close()
+        if hasattr(self, '_is_session_owner') and self._is_session_owner: self.db_session.close()
 
 class DialogoCliente(DialogoBase):
     NOME_ENTIDADE = "Cliente"
@@ -134,11 +132,8 @@ class DialogoFuncionario(DialogoBase):
     def salvar_dados(self):
         info = mod_info.Informacao(self.telefone_input.text(), self.email_input.text(), self.endereco_input.text() or "Rua, 1", ""); dados = {'nome': self.nome_input.text(), 'nascimento_obj': self.nascimento_input.date().toPython(), 'cpf': self.cpf_input.text(), 'ctps': self.ctps_input.text(), 'informacao_contato': info, 'salario': self.salario_input.value(), 'data_admissao_obj': self.admissao_input.date().toPython()}
         if self.objeto_edicao:
-            dados_upd = {k.replace('_obj', ''): v for k, v in dados.items()}
-            dados_upd['info_contato'] = dados_upd.pop('informacao_contato')
-            crud_funcionario.atualizar_dados_funcionario(self.db_session, self.objeto_edicao.id, **dados_upd)
-        else:
-            crud_funcionario.criar_funcionario(self.db_session, **dados)
+            dados_upd = {k.replace('_obj', ''): v for k, v in dados.items()}; dados_upd['info_contato'] = dados_upd.pop('informacao_contato'); crud_funcionario.atualizar_dados_funcionario(self.db_session, self.objeto_edicao.id, **dados_upd)
+        else: crud_funcionario.criar_funcionario(self.db_session, **dados)
 
 class DialogoProduto(DialogoBase):
     NOME_ENTIDADE = "Produto"
@@ -185,25 +180,20 @@ class DialogoAgenda(DialogoBase):
         self.data_selecionada = data_selecionada or (QDate(objeto_edicao.data_hora_inicio.date()) if objeto_edicao else QDate.currentDate()); self.itens_agendados_memoria = []
         super().__init__(objeto_edicao, parent, db_session)
     def criar_widgets(self):
-        self.funcionario_combo = QComboBox(); self.cliente_combo = QComboBox(); self.data_label = QLabel(self.data_selecionada.toString("dd/MM/yyyy")); self.hora_inicio_combo = QTimeEdit(displayFormat="HH:mm"); self.hora_fim_combo = QTimeEdit(displayFormat="HH:mm"); self.form_layout.addRow("Funcionário:", self.funcionario_combo); self.form_layout.addRow("Cliente:", self.cliente_combo); self.form_layout.addRow("Data:", self.data_label); self.form_layout.addRow("Início:", self.hora_inicio_combo); self.form_layout.addRow("Fim:", self.hora_fim_combo)
-        for func in self.db_session.query(crud_funcionario.Funcionario).all(): self.funcionario_combo.addItem(f"{func.nome}", func.id)
-        for cli in self.db_session.query(crud_cliente.Cliente).all(): self.cliente_combo.addItem(f"{cli.nome}", cli.id)
-        self.layout.addSpacing(15); self.layout.addWidget(QLabel("<b>Itens do Agendamento</b>")); item_botoes_layout = QHBoxLayout(); btn_add_item = QPushButton("Adicionar Item"); btn_rem_item = QPushButton("Remover Item"); item_botoes_layout.addWidget(btn_add_item); item_botoes_layout.addWidget(btn_rem_item); item_botoes_layout.addStretch(); self.layout.addLayout(item_botoes_layout); self.tabela_itens = QTableView(); self.tabela_itens.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows); self.layout.addWidget(self.tabela_itens); btn_add_item.clicked.connect(self._adicionar_item); btn_rem_item.clicked.connect(self._remover_item)
+        self.funcionario_combo = QComboBox(); self.cliente_combo = QComboBox(); self.data_label = QLabel(self.data_selecionada.toString("dd/MM/yyyy")); self.hora_inicio_input = QLineEdit(); self.hora_inicio_input.setInputMask("00:00"); self.hora_fim_input = QLineEdit(); self.hora_fim_input.setInputMask("00:00"); self.form_layout.addRow("Funcionário:", self.funcionario_combo); self.form_layout.addRow("Cliente:", self.cliente_combo); self.form_layout.addRow("Data:", self.data_label); self.form_layout.addRow("Início (HH:MM):", self.hora_inicio_input); self.form_layout.addRow("Fim (HH:MM):", self.hora_fim_input); self._configurar_combo_busca(self.funcionario_combo, crud_funcionario.Funcionario); self._configurar_combo_busca(self.cliente_combo, crud_cliente.Cliente); self.layout.addSpacing(15); self.layout.addWidget(QLabel("<b>Itens do Agendamento</b>")); item_botoes_layout = QHBoxLayout(); btn_add_item = QPushButton("Adicionar Item"); btn_rem_item = QPushButton("Remover Item"); item_botoes_layout.addWidget(btn_add_item); item_botoes_layout.addWidget(btn_rem_item); item_botoes_layout.addStretch(); self.layout.addLayout(item_botoes_layout); self.tabela_itens = QTableView(); self.tabela_itens.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows); self.layout.addWidget(self.tabela_itens); btn_add_item.clicked.connect(self._adicionar_item); btn_rem_item.clicked.connect(self._remover_item)
+    def _configurar_combo_busca(self, combo: QComboBox, modelo_orm):
+        combo.setEditable(True); combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert); combo.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion); combo.completer().setFilterMode(Qt.MatchFlag.MatchContains); objetos = self.db_session.query(modelo_orm).all();
+        for i, obj in enumerate(objetos): combo.addItem(obj.nome, obj.id)
     def preencher_dados(self):
-        self.funcionario_combo.setCurrentIndex(self.funcionario_combo.findData(self.objeto_edicao.funcionario_id)); self.cliente_combo.setCurrentIndex(self.cliente_combo.findData(self.objeto_edicao.cliente_id)); self.hora_inicio_combo.setTime(QTime(self.objeto_edicao.data_hora_inicio.time())); self.hora_fim_combo.setTime(QTime(self.objeto_edicao.data_hora_fim.time()));
-        itens_db = crud_agenda.get_itens_agendados_detalhes(self.db_session, self.objeto_edicao.id)
+        self.funcionario_combo.setCurrentText(self.objeto_edicao.funcionario.nome); self.cliente_combo.setCurrentText(self.objeto_edicao.cliente.nome); self.hora_inicio_input.setText(self.objeto_edicao.data_hora_inicio.strftime("%H:%M")); self.hora_fim_input.setText(self.objeto_edicao.data_hora_fim.strftime("%H:%M")); itens_db = crud_agenda.get_itens_agendados_detalhes(self.db_session, self.objeto_edicao.id)
         for item in itens_db:
-            item_obj = None
-            if item['nome'].startswith('[P]'): item_obj = self.db_session.query(crud_produto.Produto).filter_by(nome=item['nome'][4:]).first()
-            elif item['nome'].startswith('[S]'): item_obj = self.db_session.query(crud_servico.Servico).filter_by(nome=item['nome'][4:]).first()
+            item_obj = self.db_session.query(crud_produto.Produto if '[P]' in item['nome'] else crud_servico.Servico).filter_by(nome=item['nome']).first()
             if item_obj: item['item_obj'] = item_obj
         self.itens_agendados_memoria = itens_db; self._atualizar_tabela_itens()
     def _adicionar_item(self):
         dialogo = DialogoAdicionarItemAgenda(self)
         if dialogo.exec() and dialogo.resultado:
-            item_selecionado = dialogo.resultado["item"]; qtd = dialogo.resultado["quantidade"]
-            novo_item = {"nome": item_selecionado.nome, "quantidade": qtd, "item_obj": item_selecionado, "id_associacao": None}
-            self.itens_agendados_memoria.append(novo_item); self._atualizar_tabela_itens()
+            item_selecionado = dialogo.resultado["item"]; qtd = dialogo.resultado["quantidade"]; novo_item = {"nome": item_selecionado.nome, "quantidade": qtd, "item_obj": item_selecionado, "id_associacao": None}; self.itens_agendados_memoria.append(novo_item); self._atualizar_tabela_itens()
     def _remover_item(self):
         selecao = self.tabela_itens.selectionModel().selectedRows()
         if not selecao: QMessageBox.warning(self, "Aviso", "Selecione um item para remover."); return
@@ -211,9 +201,9 @@ class DialogoAgenda(DialogoBase):
     def _atualizar_tabela_itens(self):
         modelo = ModeloItensAgenda(self.itens_agendados_memoria); self.tabela_itens.setModel(modelo)
     def salvar_dados(self):
-        func_id, cli_id = self.funcionario_combo.currentData(), self.cliente_combo.currentData();
-        if not func_id or not cli_id: raise ValueError("Funcionário e Cliente são obrigatórios.")
-        dt_inicio = datetime.combine(self.data_selecionada.toPython(), self.hora_inicio_combo.time().toPython()); dt_fim = datetime.combine(self.data_selecionada.toPython(), self.hora_fim_combo.time().toPython())
+        func_id = self.funcionario_combo.currentData(); cli_id = self.cliente_combo.currentData()
+        if not func_id or not cli_id: raise ValueError("Funcionário e Cliente devem ser válidos e selecionados da lista.")
+        dt_inicio = datetime.combine(self.data_selecionada.toPython(), datetime.strptime(self.hora_inicio_input.text(), "%H:%M").time()); dt_fim = datetime.combine(self.data_selecionada.toPython(), datetime.strptime(self.hora_fim_input.text(), "%H:%M").time())
         func_obj = self.db_session.get(crud_funcionario.Funcionario, func_id); cli_obj = self.db_session.get(crud_cliente.Cliente, cli_id)
         itens_para_salvar = [ItemAgendado(i['item_obj'], i['quantidade']) for i in self.itens_agendados_memoria if 'item_obj' in i]
         if self.objeto_edicao:
@@ -274,7 +264,6 @@ class DialogoDespesa(DialogoBase):
             elif tipo == "Salário": func_obj = self.db_session.get(crud_funcionario.Funcionario, self.salario_func.currentData()); crud_despesa.criar_salario(self.db_session, func_obj, self.salario_bruto.value(), self.salario_descontos.value(), self.salario_data.date().toPython())
             elif tipo == "Outros": crud_despesa.criar_outros(self.db_session, self.outros_valor.value(), self.outros_desc.text(), self.outros_data.date().toPython())
 
-# --- WIDGETS DE GERENCIAMENTO E VISUALIZAÇÃO ---
 class WidgetGerenciamento(QWidget):
     def __init__(self, nome_entidade: str, modelo: ModeloTabelaSqlAlchemy, dialogo_add: Optional[type] = None, dialogo_edit: Optional[type] = None, parent=None):
         super().__init__(parent); self.modelo, self.dialogo_add, self.dialogo_edit = modelo, dialogo_add, dialogo_edit or dialogo_add; self.layout = QVBoxLayout(self); botoes_layout = QHBoxLayout(); self.btn_adicionar = QPushButton("Adicionar"); self.btn_editar = QPushButton("Editar"); self.btn_deletar = QPushButton("Deletar"); botoes_layout.addWidget(QLabel(f"<b>Gerenciamento de {nome_entidade}</b>")); botoes_layout.addStretch(); botoes_layout.addWidget(self.btn_adicionar); botoes_layout.addWidget(self.btn_editar); botoes_layout.addWidget(self.btn_deletar); self.layout.addLayout(botoes_layout); self.tabela = QTableView(); self.tabela.setModel(self.modelo); self.tabela.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows); self.tabela.setSelectionMode(QTableView.SelectionMode.SingleSelection); self.tabela.horizontalHeader().setStretchLastSection(True); self.tabela.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents); self.layout.addWidget(self.tabela); self.btn_adicionar.clicked.connect(self.adicionar_item); self.btn_editar.clicked.connect(self.editar_item); self.btn_deletar.clicked.connect(self.deletar_item)
@@ -282,7 +271,7 @@ class WidgetGerenciamento(QWidget):
         if not self.dialogo_edit: self.btn_editar.setEnabled(False)
     def _executar_dialogo(self, dialogo_cls, objeto=None):
         if dialogo_cls:
-            dialogo = dialogo_cls(objeto_edicao=objeto, parent=self, db_session=self.modelo.db_session)
+            dialogo = dialogo_cls(objeto_edicao=objeto, parent=self)
             if dialogo.exec(): self.modelo.atualizar_dados()
     def adicionar_item(self): self._executar_dialogo(self.dialogo_add)
     def editar_item(self):
@@ -312,7 +301,7 @@ class WidgetAgenda(QWidget):
         for btn in self.grupo_botoes_agenda.buttons(): self.grupo_botoes_agenda.removeButton(btn)
         while self.grade_layout.count():
             layout_item = self.grade_layout.takeAt(0)
-            if layout_item.widget(): layout_item.widget().deleteLater()
+            if layout_item and layout_item.widget(): layout_item.widget().deleteLater()
         for hora in range(7, 20):
             for minuto in (0, 30):
                 horario = time(hora, minuto); btn_horario = QPushButton(f"{hora:02d}:{minuto:02d}"); btn_horario.setCheckable(True); agendamento = next((ag for ag in self.agendamentos_do_dia if ag.data_hora_inicio.time() <= horario < ag.data_hora_fim.time()), None)
@@ -324,7 +313,7 @@ class WidgetAgenda(QWidget):
         id_selecionado = self.grupo_botoes_agenda.checkedId()
         if id_selecionado > 0: return self.db_session.get(crud_agenda.Agenda, id_selecionado)
     def adicionar_agendamento(self):
-        dialogo = DialogoAgenda(parent=self, data_selecionada=self.calendario.selectedDate(), db_session=self.db_session);
+        dialogo = DialogoAgenda(parent=self, data_selecionada=self.calendario.selectedDate());
         if dialogo.exec(): self._atualizar_visualizacao_diaria()
     def editar_agendamento(self):
         agenda_obj = self._obter_agenda_selecionada()
