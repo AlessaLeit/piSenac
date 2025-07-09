@@ -24,6 +24,7 @@ import despesa as crud_despesa
 import venda as crud_venda
 import info as mod_info
 
+
 class ModeloTabelaSqlAlchemy(QAbstractTableModel):
     def __init__(self, colunas: List[str], parent=None):
         super().__init__(parent); self._dados, self._objetos, self._colunas = [], [], colunas; self.db_session = database.SessionLocal(); self.carregar_dados()
@@ -40,40 +41,40 @@ class ModeloTabelaSqlAlchemy(QAbstractTableModel):
     def __del__(self): self.db_session.close()
 
 class ModeloCliente(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Nome", "CPF", "Nascimento", "Telefone", "Email"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_cliente.Cliente).order_by(crud_cliente.Cliente.id).all(); self._dados = [[o.id, o.nome, o.cpf, o.nascimento.strftime('%d/%m/%Y'), o.info_contato.telefone, o.info_contato.email] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Nome", "CPF", "Nascimento", "Telefone", "Email"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_cliente.Cliente).order_by(crud_cliente.Cliente.id).all(); self._dados = [[ o.nome, o.cpf, o.nascimento.strftime('%d/%m/%Y'), o.info_contato.telefone, o.info_contato.email] for o in self._objetos]
 
 class ModeloFuncionario(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Nome", "CPF", "Admissão", "Salário"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_funcionario.Funcionario).order_by(crud_funcionario.Funcionario.id).all(); self._dados = [[o.id, o.nome, o.cpf, o.data_admissao.strftime('%d/%m/%Y'), f"R$ {o.salario:.2f}"] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Nome", "CPF", "Admissão", "Salário"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_funcionario.Funcionario).order_by(crud_funcionario.Funcionario.id).all(); self._dados = [[ o.nome, o.cpf, o.data_admissao.strftime('%d/%m/%Y'), f"R$ {o.salario:.2f}"] for o in self._objetos]
 
 class ModeloProduto(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Nome", "Preço Venda", "Estoque"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_produto.Produto).order_by(crud_produto.Produto.id).all(); self._dados = [[o.id, o.nome, f"R$ {o.preco:.2f}", f"{o.estoque:.2f}"] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Nome", "Preço Venda", "Estoque"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_produto.Produto).order_by(crud_produto.Produto.id).all(); self._dados = [[ o.nome, f"R$ {o.preco:.2f}", f"{o.estoque:.2f}"] for o in self._objetos]
 
 class ModeloServico(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Nome", "Valor de Venda"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_servico.Servico).order_by(crud_servico.Servico.id).all(); self._dados = [[o.id, o.nome, f"R$ {o.valor_venda:.2f}"] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Nome", "Valor de Venda"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_servico.Servico).order_by(crud_servico.Servico.id).all(); self._dados = [[ o.nome, f"R$ {o.valor_venda:.2f}"] for o in self._objetos]
 
 class ModeloFornecedor(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Nome", "CNPJ", "Telefone"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_fornecedor.Fornecedor).order_by(crud_fornecedor.Fornecedor.id).all(); self._dados = [[o.id, o.nome, o.cnpj, o.telefone] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Nome", "CNPJ", "Telefone"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_fornecedor.Fornecedor).order_by(crud_fornecedor.Fornecedor.id).all(); self._dados = [[o.nome, o.cnpj, o.telefone] for o in self._objetos]
 
 class ModeloSuprimento(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Nome", "Unidade", "Custo", "Estoque"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_suprimento.Suprimento).order_by(crud_suprimento.Suprimento.id).all(); self._dados = [[o.id, o.nome, o.unidade_medida, f"R$ {o.custo_unitario:.2f}", f"{o.estoque:.2f}"] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Nome", "Unidade", "Custo", "Estoque"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_suprimento.Suprimento).order_by(crud_suprimento.Suprimento.id).all(); self._dados = [[o.nome, o.unidade_medida, f"R$ {o.custo_unitario:.2f}", f"{o.estoque:.2f}"] for o in self._objetos]
 
 class ModeloMaquina(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Nome", "Nº Série", "Status"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_maquina.Maquina).order_by(crud_maquina.Maquina.id).all(); self._dados = [[o.id, o.nome, o.numero_serie, o.status.value] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Nome", "Nº Série", "Status"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_maquina.Maquina).order_by(crud_maquina.Maquina.id).all(); self._dados = [[ o.nome, o.numero_serie, o.status.value] for o in self._objetos]
 
 class ModeloVenda(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Data", "Funcionário", "Cliente", "Valor", "Agenda ID"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_venda.Venda).order_by(crud_venda.Venda.data_venda.desc()).all(); self._dados = [[o.id, o.data_venda.strftime('%d/%m/%Y'), o.funcionario.nome, o.cliente.nome, f"R$ {o.valor_total:.2f}", o.agenda_id or "N/A"] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Data", "Funcionário", "Cliente", "Valor", "Agenda ID"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_venda.Venda).order_by(crud_venda.Venda.data_venda.desc()).all(); self._dados = [[ o.data_venda.strftime('%d/%m/%Y'), o.funcionario.nome, o.cliente.nome, f"R$ {o.valor_total:.2f}", o.agenda_id or "N/A"] for o in self._objetos]
 
 class ModeloDespesa(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__(["ID", "Data", "Tipo", "Valor", "Detalhes"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_despesa.Despesa).order_by(crud_despesa.Despesa.data_despesa.desc()).all(); self._dados = [[o.id, o.data_despesa.strftime("%d/%m/%Y"), o.__class__.__name__, f"R$ {o.valor_total:.2f}", self._obter_detalhes(o)] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__(["Data", "Tipo", "Valor", "Detalhes"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_despesa.Despesa).order_by(crud_despesa.Despesa.data_despesa.desc()).all(); self._dados = [[ o.data_despesa.strftime("%d/%m/%Y"), o.__class__.__name__, f"R$ {o.valor_total:.2f}", self._obter_detalhes(o)] for o in self._objetos]
     def _obter_detalhes(self, d: crud_despesa.Despesa) -> str:
         if isinstance(d, crud_despesa.Compra): return f"Item: {d.item_descricao or d.item_tipo} | Forn: {d.fornecedor_obj.nome}"
         if isinstance(d, crud_despesa.FixoTerceiro): return f"{d.tipo_despesa_str} | Forn: {d.fornecedor_obj.nome if d.fornecedor_obj else 'N/A'}"
@@ -104,10 +105,18 @@ class DialogoBase(QDialog):
     def preencher_dados(self): pass
     def salvar_dados(self): raise NotImplementedError
     def accept(self):
-        try: self.salvar_dados(); self.db_session.commit(); QMessageBox.information(self, "Sucesso", "Operação realizada com sucesso."); super().accept()
-        except Exception as e: self.db_session.rollback(); QMessageBox.critical(self, "Erro", f"Ocorreu um erro: {e}\n\nA operação foi revertida.")
+        try: 
+            self.salvar_dados(); 
+            self.db_session.commit();
+            QMessageBox.information(self, "Sucesso", "Operação realizada com sucesso."); 
+            super().accept()
+        except Exception as e: 
+            self.db_session.rollback(); 
+            QMessageBox.critical(self, "Erro", f"Ocorreu um erro: {e}\n\nA operação foi revertida.")
+   
     def __del__(self):
-        if hasattr(self, '_is_session_owner') and self._is_session_owner: self.db_session.close()
+        if hasattr(self, '_is_session_owner') and self._is_session_owner: 
+            self.db_session.close()
 
 class DialogoCliente(DialogoBase):
     NOME_ENTIDADE = "Cliente"
@@ -270,9 +279,10 @@ class WidgetGerenciamento(QWidget):
         if not self.dialogo_add: self.btn_adicionar.setEnabled(False)
         if not self.dialogo_edit: self.btn_editar.setEnabled(False)
     def _executar_dialogo(self, dialogo_cls, objeto=None):
-        if dialogo_cls:
-            dialogo = dialogo_cls(objeto_edicao=objeto, parent=self)
-            if dialogo.exec(): self.modelo.atualizar_dados()
+       if dialogo_cls:
+            dialogo = dialogo_cls(objeto_edicao=objeto, parent=self, db_session=self.modelo.db_session)
+            if dialogo.exec(): 
+                self.modelo.atualizar_dados() 
     def adicionar_item(self): self._executar_dialogo(self.dialogo_add)
     def editar_item(self):
         selecao = self.tabela.selectionModel().selectedRows()
@@ -281,17 +291,28 @@ class WidgetGerenciamento(QWidget):
         if objeto: self._executar_dialogo(self.dialogo_edit, objeto)
     def deletar_item(self):
         selecao = self.tabela.selectionModel().selectedRows()
-        if not selecao: QMessageBox.warning(self, "Aviso", "Selecione um item para deletar."); return
-        objeto = self.modelo.obter_objeto_por_indice(selecao[0]);
-        if not objeto: return
-        if QMessageBox.question(self, "Confirmar", f"Deletar ID {objeto.id}?") == QMessageBox.StandardButton.Yes:
+        if not selecao:
+            QMessageBox.warning(self, "Aviso", "Selecione um item para deletar.")
+            return
+        
+        objeto = self.modelo.obter_objeto_por_indice(selecao[0])
+        if not objeto:
+            return
+        if QMessageBox.question(self, "Confirmar", f"Tem certeza que deseja deletar o item ID {objeto.id}?") == QMessageBox.StandardButton.Yes:
             try:
-                with database.SessionLocal() as db:
-                    item_para_deletar = db.get(type(objeto), objeto.id)
-                    if item_para_deletar: db.delete(item_para_deletar); db.commit()
-                QMessageBox.information(self, "Sucesso", "Item deletado."); self.modelo.atualizar_dados()
-            except Exception as e: QMessageBox.critical(self, "Erro", f"Não foi possível deletar: {e}")
-
+                # Usa a sessão do modelo para deletar o item
+                # Isso garante que a mesma sessão que o modelo usa seja atualizada
+                item_para_deletar = self.modelo.db_session.get(type(objeto), objeto.id)
+                if item_para_deletar:
+                    self.modelo.db_session.delete(item_para_deletar)
+                    self.modelo.db_session.commit()
+                
+                QMessageBox.information(self, "Sucesso", "Item deletado com sucesso.")
+                self.modelo.atualizar_dados() # Atualiza a tabela após a exclusão
+            except Exception as e:
+                self.modelo.db_session.rollback() # Reverte em caso de erro
+                QMessageBox.critical(self, "Erro", f"Não foi possível deletar o item: {e}")
+                
 class WidgetAgenda(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent); self.layout = QHBoxLayout(self); self.db_session = database.SessionLocal(); self.calendario = QCalendarWidget(); self.calendario.selectionChanged.connect(self._atualizar_visualizacao_diaria); self.layout.addWidget(self.calendario, 1); view_direita = QWidget(); layout_direita = QVBoxLayout(view_direita); self.label_data = QLabel(); layout_direita.addWidget(self.label_data); botoes_layout = QHBoxLayout(); self.btn_add = QPushButton("Adicionar"); self.btn_edit = QPushButton("Editar"); self.btn_del = QPushButton("Deletar"); botoes_layout.addStretch(); botoes_layout.addWidget(self.btn_add); botoes_layout.addWidget(self.btn_edit); botoes_layout.addWidget(self.btn_del); layout_direita.addLayout(botoes_layout); self.scroll_area = QScrollArea(); self.scroll_area.setWidgetResizable(True); self.grade_horarios_widget = QWidget(); self.grade_layout = QVBoxLayout(self.grade_horarios_widget); self.scroll_area.setWidget(self.grade_horarios_widget); layout_direita.addWidget(self.scroll_area); self.layout.addWidget(view_direita, 2); self.agendamentos_do_dia = []; self.grupo_botoes_agenda = QButtonGroup(self); self.grupo_botoes_agenda.setExclusive(True); self.btn_add.clicked.connect(self.adicionar_agendamento); self.btn_edit.clicked.connect(self.editar_agendamento); self.btn_del.clicked.connect(self.deletar_agendamento); self._atualizar_visualizacao_diaria()
@@ -341,4 +362,4 @@ class JanelaPrincipal(QMainWindow):
             self.menu_lateral.addItem(nome); self.conteudo_stack.addWidget(widget)
 
 if __name__ == "__main__":
-    database.criar_banco(); app = QApplication(sys.argv); app.setStyle("Fusion"); palette = QPalette(); palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53)); palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25)); palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53)); palette.setColor(QPalette.ColorRole.ToolTipBase, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53)); palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red); palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218)); palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218)); palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.black); app.setPalette(palette); janela = JanelaPrincipal(); janela.show(); sys.exit(app.exec())
+    database.criar_banco(); app = QApplication(sys.argv); app.setStyle("Fusion"); palette = QPalette(); palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53)); palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25)); palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53)); palette.setColor(QPalette.ColorRole.ToolTipBase, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53)); palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white); palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red); palette.setColor(QPalette.ColorRole.Link, QColor("#8a2be2")); palette.setColor(QPalette.ColorRole.Highlight, QColor("#8a2be2")); palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.black); app.setPalette(palette); janela = JanelaPrincipal(); janela.show(); sys.exit(app.exec())

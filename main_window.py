@@ -1,5 +1,5 @@
 import sys
-from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea,
                                QGridLayout, QStackedWidget, QSizePolicy)
 from PySide6.QtCore import Qt, QSize
@@ -18,6 +18,8 @@ from backend import (database, WidgetGerenciamento, WidgetAgenda,
     ModeloVenda, DialogoVenda, DialogoEditarVenda,
     ModeloDespesa, DialogoDespesa
 )
+# Importar o novo widget de relatórios
+from relatorios import WidgetRelatorios # Adicione esta linha
 
 class SidebarButton(QPushButton):
     def __init__(self, text, icon_text="", parent=None):
@@ -64,8 +66,8 @@ class MainWindow(QMainWindow):
         palette.setColor(QPalette.ColorRole.Button, Qt.white)
         palette.setColor(QPalette.ColorRole.ButtonText, Qt.black)
         palette.setColor(QPalette.ColorRole.BrightText, Qt.red)
-        palette.setColor(QPalette.ColorRole.Link, QColor(0, 122, 204))
-        palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 122, 204))
+        palette.setColor(QPalette.ColorRole.Link, QColor("#8a2be2"))
+        palette.setColor(QPalette.ColorRole.Highlight, QColor("#8a2be2"))
         palette.setColor(QPalette.ColorRole.HighlightedText, Qt.white)
         self.setPalette(palette)
 
@@ -113,10 +115,11 @@ class MainWindow(QMainWindow):
 
         self.page_titles = [
            "Agenda", "Clientes", "Vendas", "Despesas", "Produtos",
-            "Serviços", "Suprimentos", "Fornecedores", "Máquinas", "Funcionários"
+            "Serviços", "Suprimentos", "Fornecedores", "Máquinas", "Funcionários",
+            "Relatórios" # Adicione esta linha
         ]
 
-        icons = ["📅", "👥", "💰", "💸", "🛍️", "🔧", "📦", "🏭", "⚙️", "👨‍💼"]
+        icons = ["📅", "👥", "💰", "💸", "🛍️", "🔧", "📦", "🏭", "⚙️", "👨‍💼", "📈"] # Adicione um ícone para Relatórios
 
         self.nav_buttons = []
         for icon, name in zip(icons, self.page_titles):
@@ -140,7 +143,8 @@ class MainWindow(QMainWindow):
             WidgetGerenciamento("Suprimento", ModeloSuprimento(), DialogoSuprimento),
             WidgetGerenciamento("Fornecedor", ModeloFornecedor(), DialogoFornecedor),
             WidgetGerenciamento("Máquina", ModeloMaquina(), DialogoMaquina),
-            WidgetGerenciamento("Funcionário", ModeloFuncionario(), DialogoFuncionario)
+            WidgetGerenciamento("Funcionário", ModeloFuncionario(), DialogoFuncionario),
+            WidgetRelatorios() # Adicione esta linha
         ]
         for widget in widgets:
             self.stacked_widget.addWidget(widget)
@@ -163,3 +167,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
