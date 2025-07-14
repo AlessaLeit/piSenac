@@ -282,7 +282,8 @@ class WidgetGerenciamento(QWidget):
        if dialogo_cls:
             dialogo = dialogo_cls(objeto_edicao=objeto, parent=self, db_session=self.modelo.db_session)
             if dialogo.exec(): 
-                self.modelo.atualizar_dados() 
+                self.modelo.atualizar_dados()
+                self.tabela.viewport().update()
     def adicionar_item(self): self._executar_dialogo(self.dialogo_add)
     def editar_item(self):
         selecao = self.tabela.selectionModel().selectedRows()
@@ -315,9 +316,59 @@ class WidgetGerenciamento(QWidget):
                 
 class WidgetAgenda(QWidget):
     def __init__(self, parent=None):
-        super().__init__(parent); self.layout = QHBoxLayout(self); self.db_session = database.SessionLocal(); self.calendario = QCalendarWidget(); self.calendario.selectionChanged.connect(self._atualizar_visualizacao_diaria); self.layout.addWidget(self.calendario, 1); view_direita = QWidget(); layout_direita = QVBoxLayout(view_direita); self.label_data = QLabel(); layout_direita.addWidget(self.label_data); botoes_layout = QHBoxLayout(); self.btn_add = QPushButton("Adicionar"); self.btn_edit = QPushButton("Editar"); self.btn_del = QPushButton("Deletar"); botoes_layout.addStretch(); botoes_layout.addWidget(self.btn_add); botoes_layout.addWidget(self.btn_edit); botoes_layout.addWidget(self.btn_del); layout_direita.addLayout(botoes_layout); self.scroll_area = QScrollArea(); self.scroll_area.setWidgetResizable(True); self.grade_horarios_widget = QWidget(); self.grade_layout = QVBoxLayout(self.grade_horarios_widget); self.scroll_area.setWidget(self.grade_horarios_widget); layout_direita.addWidget(self.scroll_area); self.layout.addWidget(view_direita, 2); self.agendamentos_do_dia = []; self.grupo_botoes_agenda = QButtonGroup(self); self.grupo_botoes_agenda.setExclusive(True); self.btn_add.clicked.connect(self.adicionar_agendamento); self.btn_edit.clicked.connect(self.editar_agendamento); self.btn_del.clicked.connect(self.deletar_agendamento); self._atualizar_visualizacao_diaria()
+        super().__init__(parent)
+        self.layout = QHBoxLayout(self)
+        self.db_session = database.SessionLocal()
+        self.calendario = QCalendarWidget()
+        self.calendario.selectionChanged.connect(self._atualizar_visualizacao_diaria)
+        self.layout.addWidget(self.calendario, 1)
+
+        view_direita = QWidget()
+        layout_direita = QVBoxLayout(view_direita)
+
+        self.label_data = QLabel()
+        layout_direita.addWidget(self.label_data)
+
+        botoes_layout = QHBoxLayout()
+        self.btn_add = QPushButton("Adicionar")
+        self.btn_edit = QPushButton("Editar")
+        self.btn_del = QPushButton("Deletar")
+        self.btn_atualizar = QPushButton("Atualizar")
+        botoes_layout.addStretch()
+        botoes_layout.addWidget(self.btn_add)
+        botoes_layout.addWidget(self.btn_edit)
+        botoes_layout.addWidget(self.btn_del)
+        botoes_layout.addWidget(self.btn_atualizar)
+        layout_direita.addLayout(botoes_layout)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.grade_horarios_widget = QWidget()
+        self.grade_layout = QVBoxLayout(self.grade_horarios_widget)
+        self.scroll_area.setWidget(self.grade_horarios_widget)
+        layout_direita.addWidget(self.scroll_area)
+
+        self.layout.addWidget(view_direita, 2)
+
+        self.agendamentos_do_dia = []
+        self.grupo_botoes_agenda = QButtonGroup(self)
+        self.grupo_botoes_agenda.setExclusive(True)
+
+        self.btn_add.clicked.connect(self.adicionar_agendamento)
+        self.btn_edit.clicked.connect(self.editar_agendamento)
+        self.btn_del.clicked.connect(self.deletar_agendamento)
+        self.btn_atualizar.clicked.connect(self._atualizar_visualizacao_diaria)
+
+        self._atualizar_visualizacao_diaria()
     def _atualizar_visualizacao_diaria(self):
-        data_selecionada = self.calendario.selectedDate().toPython(); self.label_data.setText(f"<b>Agendamentos para {data_selecionada.strftime('%d/%m/%Y')}</b>"); inicio_dia = datetime.combine(data_selecionada, time.min); fim_dia = datetime.combine(data_selecionada, time.max); self.db_session.expire_all(); self.agendamentos_do_dia = self.db_session.query(crud_agenda.Agenda).filter(crud_agenda.Agenda.data_hora_inicio.between(inicio_dia, fim_dia)).order_by(crud_agenda.Agenda.data_hora_inicio).all(); self._recriar_grade_horarios()
+        data_selecionada = self.calendario.selectedDate().toPython()
+        self.label_data.setText(f"<b>Agendamentos para {data_selecionada.strftime('%d/%m/%Y')}</b>")
+        inicio_dia = datetime.combine(data_selecionada, time.min)
+        fim_dia = datetime.combine(data_selecionada, time.max)
+        self.db_session.expire_all()
+        self.db_session.commit()  # Added commit to refresh database state
+        self.agendamentos_do_dia = self.db_session.query(crud_agenda.Agenda).filter(crud_agenda.Agenda.data_hora_inicio.between(inicio_dia, fim_dia)).order_by(crud_agenda.Agenda.data_hora_inicio).all()
+        self._recriar_grade_horarios()
     def _recriar_grade_horarios(self):
         for btn in self.grupo_botoes_agenda.buttons(): self.grupo_botoes_agenda.removeButton(btn)
         while self.grade_layout.count():

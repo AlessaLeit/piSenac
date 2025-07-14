@@ -116,10 +116,10 @@ class MainWindow(QMainWindow):
         self.page_titles = [
            "Agenda", "Clientes", "Vendas", "Despesas", "Produtos",
             "Serviços", "Suprimentos", "Fornecedores", "Máquinas", "Funcionários",
-            "Relatórios" # Adicione esta linha
+            "Relatórios" 
         ]
 
-        icons = ["📅", "👥", "💰", "💸", "🛍️", "🔧", "📦", "🏭", "⚙️", "👨‍💼", "📈"] # Adicione um ícone para Relatórios
+        icons = ["📅", "👥", "💰", "💸", "🛍️", "🔧", "📦", "🏭", "⚙️", "👨‍💼", "📈"] 
 
         self.nav_buttons = []
         for icon, name in zip(icons, self.page_titles):
