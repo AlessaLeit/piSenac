@@ -51,6 +51,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Sistema de Gestão - Clínica de Estética")
         self.setGeometry(100, 100, 1200, 800)
+        self.setWindowIcon(QIcon("assets/img_icon.png"))
 
         # Banco
         database.criar_banco()
@@ -107,25 +108,13 @@ class MainWindow(QMainWindow):
 
         # Create QLabel for the image icon
         icon_label = QLabel()
-        pixmap = QPixmap("assets/img_icon.png")
+        pixmap = QPixmap("assets/img_icon_nome.png")
         icon_label.setPixmap(pixmap)
-        icon_label.setFixedSize(40, 40)  # Adjust size as needed
+        icon_label.setFixedSize(210, 60)  # Adjust size as needed
         icon_label.setScaledContents(True)  # Scale image to fit label size
 
-        # Create QLabel for the title text
-        title_label = QLabel("Lumina")
-        title_label.setStyleSheet("""
-            QLabel {
-                color: #8A2BE2;
-                font-size: 20px;
-                font-weight: bold;
-                margin-left: 8px;
-                margin-bottom: 24px;
-            }
-        """)
-        # Add icon and title to the horizontal layout
+        # Add icon to the horizontal layout
         title_layout.addWidget(icon_label)
-        title_layout.addWidget(title_label)
         title_layout.addStretch()
 
         # Add the horizontal layout to the sidebar layout
