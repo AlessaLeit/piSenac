@@ -262,15 +262,137 @@ class DialogoAgenda(DialogoBase):
 class DialogoVenda(DialogoBase):
     NOME_ENTIDADE = "Venda"
     def criar_widgets(self):
-        self.agenda_combo = QComboBox(); self.data_venda_input = QDateEdit(calendarPopup=True, displayFormat="dd/MM/yyyy", date=QDate.currentDate()); self.label_info = QLabel("Selecione uma agenda com status 'Agendado'.\nCliente e Funcionário serão preenchidos da agenda."); self.label_info.setStyleSheet("font-style: italic; color: gray;"); self.form_layout.addRow(self.label_info); self.form_layout.addRow("Agenda para Faturar:", self.agenda_combo); self.form_layout.addRow("Data da Venda:", self.data_venda_input); self._popular_agendas()
+        from PySide6.QtWidgets import QRadioButton, QButtonGroup, QGroupBox, QFormLayout
+
+        # Radio buttons for selection mode
+        self.radio_group = QButtonGroup(self)
+        self.radio_agenda = QRadioButton("Adicionar a partir da Agenda")
+        self.radio_manual = QRadioButton("Adicionar Manualmente")
+        self.radio_agenda.setChecked(True)
+        self.radio_group.addButton(self.radio_agenda)
+        self.radio_group.addButton(self.radio_manual)
+
+        # Group box for radio buttons
+        self.radio_group_box = QGroupBox("Modo de Adição")
+        radio_layout = QHBoxLayout()
+        radio_layout.addWidget(self.radio_agenda)
+        radio_layout.addWidget(self.radio_manual)
+        self.radio_group_box.setLayout(radio_layout)
+
+        # Existing agenda combo and label
+        self.agenda_combo = QComboBox()
+        self.data_venda_input = QDateEdit(calendarPopup=True, displayFormat="dd/MM/yyyy", date=QDate.currentDate())
+        self.label_info = QLabel("Selecione uma agenda com status 'Agendado'.\nCliente e Funcionário serão preenchidos da agenda.")
+        self.label_info.setStyleSheet("font-style: italic; color: gray;")
+
+        # Manual input fields
+        self.funcionario_combo = QComboBox()
+        self.cliente_combo = QComboBox()
+        self.produto_combo = QComboBox()
+        self.quantidade_input = QDoubleSpinBox()
+        self.quantidade_input.setMinimum(1)
+        self.quantidade_input.setMaximum(9999)
+        self.quantidade_input.setValue(1)
+        self.label_manual_info = QLabel("Selecione manualmente o Funcionário, Cliente, Produto e Quantidade para a venda.")
+        self.label_manual_info.setStyleSheet("font-style: italic; color: gray;")
+
+        # Populate manual combos
+        self._popular_funcionario()
+        self._popular_cliente()
+        self._popular_produto()
+
+        # Add widgets to form layout
+        self.form_layout.addRow(self.radio_group_box)
+        self.form_layout.addRow(self.label_info)
+        self.form_layout.addRow("Agenda para Faturar:", self.agenda_combo)
+        self.form_layout.addRow("Data da Venda:", self.data_venda_input)
+
+        self.form_layout.addRow(self.label_manual_info)
+        self.form_layout.addRow("Funcionário:", self.funcionario_combo)
+        self.form_layout.addRow("Cliente:", self.cliente_combo)
+        self.form_layout.addRow("Produto/Serviço:", self.produto_combo)
+        self.form_layout.addRow("Quantidade:", self.quantidade_input)
+
+        # Initially hide manual inputs
+        self.label_manual_info.hide()
+        self.funcionario_combo.hide()
+        self.cliente_combo.hide()
+        self.produto_combo.hide()
+        self.quantidade_input.hide()
+
+        # Connect radio buttons to toggle UI
+        self.radio_agenda.toggled.connect(self._toggle_mode_ui)
+
+        self._popular_agendas()
+
     def _popular_agendas(self):
         agendas = self.db_session.query(crud_agenda.Agenda).filter(crud_agenda.Agenda.status == crud_agenda.AgendaStatus.AGENDADO).all()
-        self.agenda_combo.addItem("Selecione uma Agenda...", None); [self.agenda_combo.addItem(f"ID: {ag.id} - {ag.cliente.nome} ({ag.data_hora_inicio.strftime('%d/%m')})", ag.id) for ag in agendas]
+        self.agenda_combo.clear()
+        self.agenda_combo.addItem("Selecione uma Agenda...", None)
+        [self.agenda_combo.addItem(f"ID: {ag.id} - {ag.cliente.nome} ({ag.data_hora_inicio.strftime('%d/%m')})", ag.id) for ag in agendas]
+
+    def _popular_funcionario(self):
+        self.funcionario_combo.clear()
+        funcionarios = self.db_session.query(crud_funcionario.Funcionario).order_by(crud_funcionario.Funcionario.nome).all()
+        for f in funcionarios:
+            self.funcionario_combo.addItem(f.nome, f.id)
+
+    def _popular_cliente(self):
+        self.cliente_combo.clear()
+        clientes = self.db_session.query(crud_cliente.Cliente).order_by(crud_cliente.Cliente.nome).all()
+        for c in clientes:
+            self.cliente_combo.addItem(c.nome, c.id)
+
+    def _popular_produto(self):
+        self.produto_combo.clear()
+        produtos = self.db_session.query(crud_produto.Produto).order_by(crud_produto.Produto.nome).all()
+        for p in produtos:
+            self.produto_combo.addItem(p.nome, p.id)
+
+    def _toggle_mode_ui(self):
+        if self.radio_agenda.isChecked():
+            self.label_info.show()
+            self.agenda_combo.show()
+            self.label_manual_info.hide()
+            self.funcionario_combo.hide()
+            self.cliente_combo.hide()
+            self.produto_combo.hide()
+            self.quantidade_input.hide()
+        else:
+            self.label_info.hide()
+            self.agenda_combo.hide()
+            self.label_manual_info.show()
+            self.funcionario_combo.show()
+            self.cliente_combo.show()
+            self.produto_combo.show()
+            self.quantidade_input.show()
+
     def salvar_dados(self):
-        agenda_id = self.agenda_combo.currentData();
-        if not agenda_id: raise ValueError("É necessário selecionar uma agenda para faturar.")
-        agenda_obj = self.db_session.get(crud_agenda.Agenda, agenda_id); data_venda = self.data_venda_input.date().toPython()
-        crud_venda.criar_venda(self.db_session, agenda_obj.funcionario, agenda_obj.cliente, data_venda, itens_venda=[], agenda_obj=agenda_obj)
+        if self.radio_agenda.isChecked():
+            agenda_id = self.agenda_combo.currentData()
+            print(f"DEBUG: Selected agenda_id: {agenda_id}")
+            if not agenda_id:
+                raise ValueError("É necessário selecionar uma agenda para faturar.")
+            agenda_obj = self.db_session.get(crud_agenda.Agenda, agenda_id)
+            print(f"DEBUG: Retrieved agenda_obj: {agenda_obj}")
+            print(f"DEBUG: Funcionario in agenda_obj: {getattr(agenda_obj, 'funcionario', None)}")
+            print(f"DEBUG: Cliente in agenda_obj: {getattr(agenda_obj, 'cliente', None)}")
+            data_venda = self.data_venda_input.date().toPython()
+            crud_venda.criar_venda(self.db_session, agenda_obj.funcionario, agenda_obj.cliente, data_venda, itens_venda=[], agenda_obj=agenda_obj)
+        else:
+            funcionario_id = self.funcionario_combo.currentData()
+            cliente_id = self.cliente_combo.currentData()
+            produto_id = self.produto_combo.currentData()
+            quantidade = self.quantidade_input.value()
+            if not funcionario_id or not cliente_id or not produto_id:
+                raise ValueError("Funcionário, Cliente e Produto devem ser selecionados para a venda manual.")
+            funcionario_obj = self.db_session.get(crud_funcionario.Funcionario, funcionario_id)
+            cliente_obj = self.db_session.get(crud_cliente.Cliente, cliente_id)
+            produto_obj = self.db_session.get(crud_produto.Produto, produto_id)
+            data_venda = self.data_venda_input.date().toPython()
+            from venda import ItemVenda
+            # For manual sale, create sale with specified product quantity
+            crud_venda.criar_venda(self.db_session, funcionario_obj, cliente_obj, data_venda, itens_venda=[ItemVenda(produto_obj, quantidade)], agenda_obj=None)
 
 class DialogoEditarVenda(DialogoBase):
     NOME_ENTIDADE = "Venda"
@@ -282,20 +404,72 @@ class DialogoDespesa(DialogoBase):
     NOME_ENTIDADE = "Despesa"
     def criar_widgets(self): self.tipo_combo = QComboBox(); self.form_stack = QStackedWidget(); self.tipo_combo.addItems(["Compra", "Fixo/Terceiro", "Salário", "Outros"]); self.tipo_combo.currentIndexChanged.connect(self.form_stack.setCurrentIndex); self.form_layout.addRow("Tipo de Despesa:", self.tipo_combo); self.layout.insertWidget(1, self.form_stack); self._criar_form_compra(); self._criar_form_fixo(); self._criar_form_salario(); self._criar_form_outros(); self._preencher_combos()
     def _preencher_combos(self):
-        for f in self.db_session.query(crud_fornecedor.Fornecedor).all(): self.compra_fornecedor.addItem(f.nome, f.id)
-        for p in self.db_session.query(crud_produto.Produto).all(): self.compra_item.addItem(f"[P] {p.nome}", p)
-        for s in self.db_session.query(crud_suprimento.Suprimento).all(): self.compra_item.addItem(f"[S] {s.nome}", s)
-        for func in self.db_session.query(crud_funcionario.Funcionario).all(): self.salario_func.addItem(func.nome, func.id)
+        self.compra_fornecedor.clear()
+        for f in self.db_session.query(crud_fornecedor.Fornecedor).all():
+            self.compra_fornecedor.addItem(f.nome, f.id)
+        self.compra_item.clear()
+        for p in self.db_session.query(crud_produto.Produto).all():
+            self.compra_item.addItem(f"[P] {p.nome}", p)
+        for s in self.db_session.query(crud_suprimento.Suprimento).all():
+            self.compra_item.addItem(f"[S] {s.nome}", s)
+        self.salario_func.clear()
+        for func in self.db_session.query(crud_funcionario.Funcionario).all():
+            self.salario_func.addItem(func.nome, func.id)
     def _criar_form_compra(self): w=QWidget(); f=QFormLayout(w); self.compra_fornecedor=QComboBox(); self.compra_item=QComboBox(); self.compra_qtd=QDoubleSpinBox(maximum=9999); self.compra_valor=QDoubleSpinBox(maximum=99999, prefix="R$ "); self.compra_data=QDateEdit(calendarPopup=True, date=QDate.currentDate(), displayFormat="dd/MM/yyyy"); f.addRow("Fornecedor:", self.compra_fornecedor); f.addRow("Item:", self.compra_item); f.addRow("Qtd:", self.compra_qtd); f.addRow("Valor Unit.:", self.compra_valor); f.addRow("Data:", self.compra_data); self.form_stack.addWidget(w)
     def _criar_form_fixo(self): w=QWidget(); f=QFormLayout(w); self.fixo_desc=QLineEdit(); self.fixo_valor=QDoubleSpinBox(maximum=99999, prefix="R$ "); self.fixo_data=QDateEdit(calendarPopup=True, date=QDate.currentDate(), displayFormat="dd/MM/yyyy"); f.addRow("Descrição:", self.fixo_desc); f.addRow("Valor:", self.fixo_valor); f.addRow("Data:", self.fixo_data); self.form_stack.addWidget(w)
-    def _criar_form_salario(self): w=QWidget(); f=QFormLayout(w); self.salario_func=QComboBox(); self.salario_bruto=QDoubleSpinBox(maximum=99999, prefix="R$ "); self.salario_descontos=QDoubleSpinBox(maximum=99999, prefix="R$ "); self.salario_data=QDateEdit(calendarPopup=True, date=QDate.currentDate(), displayFormat="dd/MM/yyyy"); f.addRow("Funcionário:", self.salario_func); f.addRow("Salário Bruto:", self.salario_bruto); f.addRow("Descontos:", self.salario_descontos); f.addRow("Data:", self.salario_data); self.form_stack.addWidget(w)
+    def _criar_form_salario(self):
+        w = QWidget()
+        f = QFormLayout(w)
+        self.salario_func = QComboBox()
+        self.salario_bruto = QDoubleSpinBox(maximum=99999, prefix="R$ ")
+        self.salario_descontos = QDoubleSpinBox(maximum=99999, prefix="R$ ")
+        self.salario_data = QDateEdit(calendarPopup=True, date=QDate.currentDate(), displayFormat="dd/MM/yyyy")
+        f.addRow("Funcionário:", self.salario_func)
+        f.addRow("Salário Bruto:", self.salario_bruto)
+        f.addRow("Descontos:", self.salario_descontos)
+        f.addRow("Data:", self.salario_data)
+        self.form_stack.addWidget(w)
+
+        # Connect to update salary when funcionario changes
+        self.salario_func.currentIndexChanged.connect(self._atualizar_salario_bruto)
+
+    def _atualizar_salario_bruto(self):
+        funcionario_id = self.salario_func.currentData()
+        if funcionario_id:
+            func_obj = self.db_session.get(crud_funcionario.Funcionario, funcionario_id)
+            if func_obj:
+                self.salario_bruto.setValue(func_obj.salario)
+        else:
+            self.salario_bruto.setValue(0)
     def _criar_form_outros(self): w=QWidget(); f=QFormLayout(w); self.outros_desc=QLineEdit(); self.outros_valor=QDoubleSpinBox(maximum=99999, prefix="R$ "); self.outros_data=QDateEdit(calendarPopup=True, date=QDate.currentDate(), displayFormat="dd/MM/yyyy"); f.addRow("Descrição:", self.outros_desc); f.addRow("Valor:", self.outros_valor); f.addRow("Data:", self.outros_data); self.form_stack.addWidget(w)
     def preencher_dados(self):
         self.tipo_combo.setEnabled(False)
-        if isinstance(self.objeto_edicao, crud_despesa.Compra): self.tipo_combo.setCurrentText("Compra"); self.compra_qtd.setValue(self.objeto_edicao.quantidade); self.compra_valor.setValue(self.objeto_edicao.valor_unitario); self.compra_data.setDate(self.objeto_edicao.data_despesa)
-        elif isinstance(self.objeto_edicao, crud_despesa.FixoTerceiro): self.tipo_combo.setCurrentText("Fixo/Terceiro"); self.fixo_desc.setText(self.objeto_edicao.tipo_despesa_str); self.fixo_valor.setValue(self.objeto_edicao.valor_total); self.fixo_data.setDate(self.objeto_edicao.data_despesa)
-        elif isinstance(self.objeto_edicao, crud_despesa.Salario): self.tipo_combo.setCurrentText("Salário"); self.salario_func.setCurrentIndex(self.salario_func.findData(self.objeto_edicao.funcionario_id)); self.salario_bruto.setValue(self.objeto_edicao.salario_bruto); self.salario_descontos.setValue(self.objeto_edicao.descontos); self.salario_data.setDate(self.objeto_edicao.data_despesa)
-        elif isinstance(self.objeto_edicao, crud_despesa.Outros): self.tipo_combo.setCurrentText("Outros"); self.outros_desc.setText(self.objeto_edicao.tipo_despesa_str); self.outros_valor.setValue(self.objeto_edicao.valor_total); self.outros_data.setDate(self.objeto_edicao.data_despesa)
+        if isinstance(self.objeto_edicao, crud_despesa.Compra):
+            self.tipo_combo.setCurrentText("Compra")
+            self.compra_qtd.setValue(self.objeto_edicao.quantidade)
+            self.compra_valor.setValue(self.objeto_edicao.valor_unitario)
+            self.compra_data.setDate(self.objeto_edicao.data_despesa)
+        elif isinstance(self.objeto_edicao, crud_despesa.FixoTerceiro):
+            self.tipo_combo.setCurrentText("Fixo/Terceiro")
+            self.fixo_desc.setText(self.objeto_edicao.tipo_despesa_str)
+            self.fixo_valor.setValue(self.objeto_edicao.valor_total)
+            self.fixo_data.setDate(self.objeto_edicao.data_despesa)
+        elif isinstance(self.objeto_edicao, crud_despesa.Salario):
+            self.tipo_combo.setCurrentText("Salário")
+            self.salario_func.setCurrentIndex(self.salario_func.findData(self.objeto_edicao.funcionario_id))
+            # Set salary from funcionario object instead of stored value
+            func_obj = self.db_session.get(crud_funcionario.Funcionario, self.objeto_edicao.funcionario_id)
+            if func_obj:
+                self.salario_bruto.setValue(func_obj.salario)
+            else:
+                self.salario_bruto.setValue(self.objeto_edicao.salario_bruto)
+            self.salario_descontos.setValue(self.objeto_edicao.descontos)
+            self.salario_data.setDate(self.objeto_edicao.data_despesa)
+        elif isinstance(self.objeto_edicao, crud_despesa.Outros):
+            self.tipo_combo.setCurrentText("Outros")
+            self.outros_desc.setText(self.objeto_edicao.tipo_despesa_str)
+            self.outros_valor.setValue(self.objeto_edicao.valor_total)
+            self.outros_data.setDate(self.objeto_edicao.data_despesa)
     def salvar_dados(self):
         tipo = self.tipo_combo.currentText()
         if self.objeto_edicao:
