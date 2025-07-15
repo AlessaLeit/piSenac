@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea,
                                QGridLayout, QStackedWidget, QSizePolicy)
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFont, QIcon, QPalette, QColor
+from PySide6.QtGui import QFont, QIcon, QPalette, QColor, QPixmap
 from functools import partial
 
 # Importações dos módulos do teeste.py
@@ -102,16 +102,34 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(16, 24, 16, 24)
         sidebar_layout.setSpacing(8)
 
-        title_label = QLabel("Clínica de Estética")
+        # Create horizontal layout for title and icon
+        title_layout = QHBoxLayout()
+
+        # Create QLabel for the image icon
+        icon_label = QLabel()
+        pixmap = QPixmap("assets/img_icon.png")
+        icon_label.setPixmap(pixmap)
+        icon_label.setFixedSize(40, 40)  # Adjust size as needed
+        icon_label.setScaledContents(True)  # Scale image to fit label size
+
+        # Create QLabel for the title text
+        title_label = QLabel("Lumina")
         title_label.setStyleSheet("""
             QLabel {
                 color: #8A2BE2;
                 font-size: 20px;
                 font-weight: bold;
+                margin-left: 8px;
                 margin-bottom: 24px;
             }
         """)
-        sidebar_layout.addWidget(title_label)
+        # Add icon and title to the horizontal layout
+        title_layout.addWidget(icon_label)
+        title_layout.addWidget(title_label)
+        title_layout.addStretch()
+
+        # Add the horizontal layout to the sidebar layout
+        sidebar_layout.addLayout(title_layout)
 
         self.page_titles = [
            "Agenda", "Clientes", "Vendas", "Despesas", "Produtos",
