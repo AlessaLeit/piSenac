@@ -23,13 +23,13 @@ def criar_banco():
     Base.metadata.create_all(bind=engine)
 
 agenda_maquinas_tabela = Table('agenda_maquinas', Base.metadata,
-    Column('agenda_id', Integer, ForeignKey('agendas.id'), primary_key=True),
-    Column('maquina_id', Integer, ForeignKey('maquinas.id'), primary_key=True)
+    Column('agenda_id', Integer, ForeignKey('agendas.id', ondelete="CASCADE"), primary_key=True),
+    Column('maquina_id', Integer, ForeignKey('maquinas.id', ondelete="CASCADE"), primary_key=True)
 )
 
 agenda_itens_tabela = Table('agenda_itens', Base.metadata,
     Column('id', Integer, primary_key=True, index=True),
-    Column('agenda_id', Integer, ForeignKey('agendas.id')),
+    Column('agenda_id', Integer, ForeignKey('agendas.id', ondelete="CASCADE")),
     # Não podemos ter uma FK para duas tabelas (servicos, produtos),
     # então usaremos um campo para tipo e outro para o ID.
     Column('item_tipo', String(50)),
@@ -40,14 +40,14 @@ agenda_itens_tabela = Table('agenda_itens', Base.metadata,
 
 agenda_suprimentos_tabela = Table('agenda_suprimentos', Base.metadata,
     Column('id', Integer, primary_key=True, index=True),
-    Column('agenda_id', Integer, ForeignKey('agendas.id')),
-    Column('suprimento_id', Integer, ForeignKey('suprimentos.id')),
+    Column('agenda_id', Integer, ForeignKey('agendas.id', ondelete="CASCADE")),
+    Column('suprimento_id', Integer, ForeignKey('suprimentos.id', ondelete="CASCADE")),
     Column('quantidade', Float)
 )
 
 venda_itens_tabela = Table('venda_itens', Base.metadata,
     Column('id', Integer, primary_key=True, index=True),
-    Column('venda_id', Integer, ForeignKey('vendas.id')),
+    Column('venda_id', Integer, ForeignKey('vendas.id', ondelete="CASCADE")),
     # Estratégia igual à da agenda para lidar com produtos e serviços
     Column('item_tipo', String(50), nullable=False),
     Column('item_id', Integer, nullable=False),

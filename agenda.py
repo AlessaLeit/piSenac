@@ -184,6 +184,7 @@ def get_itens_agendados_detalhes(db: Session, id_agenda: int) -> List[dict]:
 def atualizar_agenda(db: Session, id_agenda: int,
                      itens_a_adicionar: Optional[List[ItemAgendado]] = None,
                      ids_associacao_a_remover: Optional[List[int]] = None,
+                     maquinas_agendadas: Optional[List[mod_maquina.Maquina]] = None,
                      **kwargs: Any) -> Agenda:
     agenda = buscar_agenda(db, id_agenda)
     if not agenda:
@@ -206,6 +207,13 @@ def atualizar_agenda(db: Session, id_agenda: int,
                 quantidade=item_ag.quantidade,
                 valor_negociado=item_ag.valor_negociado
             ))
+
+    if maquinas_agendadas is not None:
+        # Clear existing machine associations
+        agenda.maquinas_agendadas.clear()
+        # Add new machine associations
+        agenda.maquinas_agendadas.extend(maquinas_agendadas)
+
     _recalcular_valor_total(db, agenda)
     db.commit()
     db.refresh(agenda)

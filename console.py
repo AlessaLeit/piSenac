@@ -647,8 +647,8 @@ def _cadastrar_agenda_ui(db: Session):
             itens_agendados.append(crud_agenda.ItemAgendado(item_sel, qtd, valor_negociado))
 
         while solicitar_sim_nao("Vincular máquina a esta agenda?"):
-            print("\n--- Máquinas Disponíveis (Operando ou em Manutenção) ---")
-            maquinas_disponiveis = [m for m in crud_maquina.listar_maquinas(db) if m.status != StatusMaquina.BAIXADO]
+            print("\n--- Máquinas Disponíveis (Operando) ---")
+            maquinas_disponiveis = [m for m in crud_maquina.listar_maquinas(db) if m.status == StatusMaquina.OPERANDO]
             print(crud_maquina._formatar_maquinas_para_tabela(db, maquinas_disponiveis))
             maquina_sel = _selecionar_objeto_ui(db, "Máquina", crud_maquina.buscar_maquina_id)
             if crud_agenda.verificar_conflito_maquina(db, maquina_sel.id, inicio_obj, fim_obj):

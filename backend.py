@@ -69,8 +69,8 @@ class ModeloMaquina(ModeloTabelaSqlAlchemy):
     def carregar_dados(self): self._objetos = self.db_session.query(crud_maquina.Maquina).order_by(crud_maquina.Maquina.id).all(); self._dados = [[ o.nome, o.numero_serie, o.status.value] for o in self._objetos]
 
 class ModeloVenda(ModeloTabelaSqlAlchemy):
-    def __init__(self, parent=None): super().__init__([ "Data", "Funcionário", "Cliente", "Valor", "Agenda ID"], parent)
-    def carregar_dados(self): self._objetos = self.db_session.query(crud_venda.Venda).order_by(crud_venda.Venda.data_venda.desc()).all(); self._dados = [[ o.data_venda.strftime('%d/%m/%Y'), o.funcionario.nome, o.cliente.nome, f"R$ {o.valor_total:.2f}", o.agenda_id or "N/A"] for o in self._objetos]
+    def __init__(self, parent=None): super().__init__([ "Data", "Funcionário", "Cliente", "Valor"], parent)
+    def carregar_dados(self): self._objetos = self.db_session.query(crud_venda.Venda).order_by(crud_venda.Venda.data_venda.desc()).all(); self._dados = [[ o.data_venda.strftime('%d/%m/%Y'), o.funcionario.nome, o.cliente.nome, f"R$ {o.valor_total:.2f}"] for o in self._objetos]
 
 class ModeloDespesa(ModeloTabelaSqlAlchemy):
     def __init__(self, parent=None): super().__init__(["Data", "Tipo", "Valor", "Detalhes"], parent)
@@ -186,19 +186,44 @@ class DialogoAdicionarItemAgenda(QDialog):
 class DialogoAgenda(DialogoBase):
     NOME_ENTIDADE = "Agendamento"
     def __init__(self, objeto_edicao: Optional[Any] = None, parent: Optional[QWidget] = None, data_selecionada: Optional[QDate] = None, db_session=None):
-        self.data_selecionada = data_selecionada or (QDate(objeto_edicao.data_hora_inicio.date()) if objeto_edicao else QDate.currentDate()); self.itens_agendados_memoria = []
+        self.data_selecionada = data_selecionada or (QDate(objeto_edicao.data_hora_inicio.date()) if objeto_edicao else QDate.currentDate()); self.itens_agendados_memoria = []; self.maquinas_selecionadas = []
         super().__init__(objeto_edicao, parent, db_session)
     def criar_widgets(self):
         self.funcionario_combo = QComboBox(); self.cliente_combo = QComboBox(); self.data_label = QLabel(self.data_selecionada.toString("dd/MM/yyyy")); self.hora_inicio_input = QLineEdit(); self.hora_inicio_input.setInputMask("00:00"); self.hora_fim_input = QLineEdit(); self.hora_fim_input.setInputMask("00:00"); self.form_layout.addRow("Funcionário:", self.funcionario_combo); self.form_layout.addRow("Cliente:", self.cliente_combo); self.form_layout.addRow("Data:", self.data_label); self.form_layout.addRow("Início (HH:MM):", self.hora_inicio_input); self.form_layout.addRow("Fim (HH:MM):", self.hora_fim_input); self._configurar_combo_busca(self.funcionario_combo, crud_funcionario.Funcionario); self._configurar_combo_busca(self.cliente_combo, crud_cliente.Cliente); self.layout.addSpacing(15); self.layout.addWidget(QLabel("<b>Itens do Agendamento</b>")); item_botoes_layout = QHBoxLayout(); btn_add_item = QPushButton("Adicionar Item"); btn_rem_item = QPushButton("Remover Item"); item_botoes_layout.addWidget(btn_add_item); item_botoes_layout.addWidget(btn_rem_item); item_botoes_layout.addStretch(); self.layout.addLayout(item_botoes_layout); self.tabela_itens = QTableView(); self.tabela_itens.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows); self.layout.addWidget(self.tabela_itens); btn_add_item.clicked.connect(self._adicionar_item); btn_rem_item.clicked.connect(self._remover_item)
-    def _configurar_combo_busca(self, combo: QComboBox, modelo_orm):
-        combo.setEditable(True); combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert); combo.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion); combo.completer().setFilterMode(Qt.MatchFlag.MatchContains); objetos = self.db_session.query(modelo_orm).all();
-        for i, obj in enumerate(objetos): combo.addItem(obj.nome, obj.id)
+        
+        # Add machine selection UI
+        self.layout.addSpacing(15)
+        self.layout.addWidget(QLabel("<b>Máquinas do Agendamento</b>"))
+        self.maquinas_list = QListWidget()
+        self.maquinas_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
+        self.layout.addWidget(self.maquinas_list)
+        self._carregar_maquinas()
+        
+    def _carregar_maquinas(self):
+        maquinas = self.db_session.query(crud_maquina.Maquina).filter(crud_maquina.Maquina.status == StatusMaquina.OPERANDO).order_by(crud_maquina.Maquina.nome).all()
+        for maquina in maquinas:
+            item = QListWidgetItem(maquina.nome)
+            item.setData(Qt.ItemDataRole.UserRole, maquina)
+            self.maquinas_list.addItem(item)
     def preencher_dados(self):
-        self.funcionario_combo.setCurrentText(self.objeto_edicao.funcionario.nome); self.cliente_combo.setCurrentText(self.objeto_edicao.cliente.nome); self.hora_inicio_input.setText(self.objeto_edicao.data_hora_inicio.strftime("%H:%M")); self.hora_fim_input.setText(self.objeto_edicao.data_hora_fim.strftime("%H:%M")); itens_db = crud_agenda.get_itens_agendados_detalhes(self.db_session, self.objeto_edicao.id)
+        self.funcionario_combo.setCurrentText(self.objeto_edicao.funcionario.nome)
+        self.cliente_combo.setCurrentText(self.objeto_edicao.cliente.nome)
+        self.hora_inicio_input.setText(self.objeto_edicao.data_hora_inicio.strftime("%H:%M"))
+        self.hora_fim_input.setText(self.objeto_edicao.data_hora_fim.strftime("%H:%M"))
+        itens_db = crud_agenda.get_itens_agendados_detalhes(self.db_session, self.objeto_edicao.id)
         for item in itens_db:
             item_obj = self.db_session.query(crud_produto.Produto if '[P]' in item['nome'] else crud_servico.Servico).filter_by(nome=item['nome']).first()
             if item_obj: item['item_obj'] = item_obj
-        self.itens_agendados_memoria = itens_db; self._atualizar_tabela_itens()
+        self.itens_agendados_memoria = itens_db
+        self._atualizar_tabela_itens()
+        
+        # Set selected machines in the list
+        maquinas_selecionadas = {m.id for m in self.objeto_edicao.maquinas_agendadas}
+        for i in range(self.maquinas_list.count()):
+            item = self.maquinas_list.item(i)
+            maquina = item.data(Qt.ItemDataRole.UserRole)
+            if maquina.id in maquinas_selecionadas:
+                item.setSelected(True)
     def _adicionar_item(self):
         dialogo = DialogoAdicionarItemAgenda(self)
         if dialogo.exec() and dialogo.resultado:
@@ -215,11 +240,24 @@ class DialogoAgenda(DialogoBase):
         dt_inicio = datetime.combine(self.data_selecionada.toPython(), datetime.strptime(self.hora_inicio_input.text(), "%H:%M").time()); dt_fim = datetime.combine(self.data_selecionada.toPython(), datetime.strptime(self.hora_fim_input.text(), "%H:%M").time())
         func_obj = self.db_session.get(crud_funcionario.Funcionario, func_id); cli_obj = self.db_session.get(crud_cliente.Cliente, cli_id)
         itens_para_salvar = [ItemAgendado(i['item_obj'], i['quantidade']) for i in self.itens_agendados_memoria if 'item_obj' in i]
+        
+        # Get selected machines
+        maquinas_selecionadas = []
+        for i in range(self.maquinas_list.count()):
+            item = self.maquinas_list.item(i)
+            if item.isSelected():
+                maquinas_selecionadas.append(item.data(Qt.ItemDataRole.UserRole))
+        
         if self.objeto_edicao:
-            crud_agenda.atualizar_agenda(self.db_session, self.objeto_edicao.id, itens_a_adicionar=itens_para_salvar, data_hora_inicio=dt_inicio, data_hora_fim=dt_fim, funcionario_id=func_id, cliente_id=cli_id)
+            crud_agenda.atualizar_agenda(self.db_session, self.objeto_edicao.id, itens_a_adicionar=itens_para_salvar, maquinas_agendadas=maquinas_selecionadas, data_hora_inicio=dt_inicio, data_hora_fim=dt_fim, funcionario_id=func_id, cliente_id=cli_id)
         else:
             if not itens_para_salvar: raise ValueError("Um novo agendamento deve ter pelo menos um item.")
-            crud_agenda.criar_agenda(self.db_session, func_obj, cli_obj, dt_inicio, dt_fim, itens_agendados=itens_para_salvar)
+            crud_agenda.criar_agenda(self.db_session, func_obj, cli_obj, dt_inicio, dt_fim, itens_agendados=itens_para_salvar, maquinas_agendadas=maquinas_selecionadas)
+    def _configurar_combo_busca(self, combo: QComboBox, model_class):
+        combo.clear()
+        items = self.db_session.query(model_class).order_by(model_class.nome).all()
+        for item in items:
+            combo.addItem(item.nome, item.id)
 
 class DialogoVenda(DialogoBase):
     NOME_ENTIDADE = "Venda"

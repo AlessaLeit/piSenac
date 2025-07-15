@@ -18,8 +18,7 @@ from backend import (database, WidgetGerenciamento, WidgetAgenda,
     ModeloVenda, DialogoVenda, DialogoEditarVenda,
     ModeloDespesa, DialogoDespesa
 )
-# Importar o novo widget de relatórios
-from relatorios import WidgetRelatorios # Adicione esta linha
+from relatorios import WidgetRelatorios 
 
 class SidebarButton(QPushButton):
     def __init__(self, text, icon_text="", parent=None):
