@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
             WidgetGerenciamento("Fornecedor", ModeloFornecedor(), DialogoFornecedor),
             WidgetGerenciamento("Máquina", ModeloMaquina(), DialogoMaquina),
             WidgetGerenciamento("Funcionário", ModeloFuncionario(), DialogoFuncionario),
-            WidgetRelatorios() # Adicione esta linha
+            WidgetRelatorios() 
         ]
         for widget in widgets:
             self.stacked_widget.addWidget(widget)
